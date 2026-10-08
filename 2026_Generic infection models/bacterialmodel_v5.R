@@ -58,6 +58,9 @@ disease_params <- list(
     wet_thresh = 60,       # Relative humidity threshold (%)
                            # Wetness response reaches 0.5 at this RH
     
+    rain_thresh = 0.25,    # Rainfall threshold (mm)
+                           # Wetness response = 1 when daily rain >= this value
+    
     rain_coeff = 0.055,    # Rain-driven dispersal coefficient
                            # Contribution of rainfall to bacterial movement
     
@@ -99,6 +102,7 @@ disease_params <- list(
     
     # Leaf wetness is required; warm, wet, rainy/dewy conditions are key.
     wet_thresh = 82,
+    rain_thresh = 0.25,
     
     # Mainly rain splash / wetness-driven.
     rain_coeff = 0.070,
@@ -130,6 +134,7 @@ disease_params <- list(
     T_max = 38,
     
     wet_thresh = 70,
+    rain_thresh = 0.25,
     
     # Strong winds and continuous heavy rain favor spread.
     rain_coeff = 0.060,
@@ -161,6 +166,7 @@ disease_params <- list(
     
     # RH is only a weak proxy here; later soil moisture/root infection module needed.
     wet_thresh = 75,
+    rain_thresh = 0.25,
     
     # Base module keeps aboveground dispersal off.
     rain_coeff = 0.000,
@@ -195,6 +201,10 @@ validate_disease_params <- function(p){
 
   if(p$mu_max < 0){
     stop("mu_max must be non-negative.")
+  }
+
+  if(p$rain_thresh < 0){
+    stop("rain_thresh must be non-negative.")
   }
   
   if(p$rain_coeff < 0 || p$wind_coeff < 0 || 
@@ -231,6 +241,29 @@ temp_response <- function(T, T_min, T_opt, T_max){
 }
 
 # -------------------------------
+# 5-1. HUMIDITY RESPONSE FUNCTION
+# -------------------------------
+
+# f_RH(RH) = 1 / (1 + exp[-k_w * (RH - RH_th)])
+# RH_th: RH threshold where the response reaches 0.5 (wet_thresh)
+# k_w  : logistic slope (fixed at 0.3)
+
+rh_response <- function(RH, RH_th, k_w = 0.3){
+  plogis(k_w * (RH - RH_th))
+}
+
+# -------------------------------
+# 5-2. WETNESS RESPONSE FUNCTION
+# -------------------------------
+
+# W(RH, Rain) = 1                                  if Rain >= Rain_th
+#             = 1 / (1 + exp[-k * (RH - RH_th)])   if Rain <  Rain_th
+
+wetness_response <- function(RH, Rain, RH_th, Rain_th, k = 0.3){
+  ifelse(Rain >= Rain_th, 1, rh_response(RH, RH_th, k))
+}
+
+# -------------------------------
 # 6. MULTIPLICATION
 # -------------------------------
 
@@ -254,7 +287,8 @@ calc_population <- function(data, disease_param, growth_period){
     disease_param$T_opt,
     disease_param$T_max
   )
-  r <- disease_param$mu_max * temp_eff * (data$rh / 100)
+  rh_eff <- rh_response(data$rh, disease_param$wet_thresh)
+  r <- disease_param$mu_max * temp_eff * rh_eff
 
   N <- numeric(n)
 
@@ -320,7 +354,12 @@ calc_dispersal <- function(data, disease_param){
 
 calc_infection <- function(data, disease_param){
   
-  wetness <- plogis(0.3 * (data$rh - disease_param$wet_thresh))
+  wetness <- wetness_response(
+    data$rh,
+    data$rain,
+    disease_param$wet_thresh,
+    disease_param$rain_thresh
+  )
   
   temp_eff <- temp_response(
     data$temp,
