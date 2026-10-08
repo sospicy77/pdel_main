@@ -231,6 +231,18 @@ temp_response <- function(T, T_min, T_opt, T_max){
 }
 
 # -------------------------------
+# 5-1. HUMIDITY RESPONSE FUNCTION
+# -------------------------------
+
+# f_RH(RH) = 1 / (1 + exp[-k_w * (RH - RH_th)])
+# RH_th: RH threshold where the response reaches 0.5 (wet_thresh)
+# k_w  : logistic slope (fixed at 0.3)
+
+rh_response <- function(RH, RH_th, k_w = 0.3){
+  plogis(k_w * (RH - RH_th))
+}
+
+# -------------------------------
 # 6. MULTIPLICATION
 # -------------------------------
 
@@ -254,7 +266,8 @@ calc_population <- function(data, disease_param, growth_period){
     disease_param$T_opt,
     disease_param$T_max
   )
-  r <- disease_param$mu_max * temp_eff * (data$rh / 100)
+  rh_eff <- rh_response(data$rh, disease_param$wet_thresh)
+  r <- disease_param$mu_max * temp_eff * rh_eff
 
   N <- numeric(n)
 
@@ -320,7 +333,7 @@ calc_dispersal <- function(data, disease_param){
 
 calc_infection <- function(data, disease_param){
   
-  wetness <- plogis(0.3 * (data$rh - disease_param$wet_thresh))
+  wetness <- rh_response(data$rh, disease_param$wet_thresh)
   
   temp_eff <- temp_response(
     data$temp,
