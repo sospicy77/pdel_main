@@ -1,12 +1,12 @@
 #############################################
-# Run bacterialmodel_v4 (fire blight) with observed weather
+# Run bacterialmodel_v5 (fire blight) with observed weather
 # Station : ID101 (Attapeu)
 # Period  : 2019-03-01 ~ 2019-06-30
 #############################################
 
 # Run from the "2026_Generic infection models" folder.
 
-model_file <- "bacterialmodel_v4.R"
+model_file <- "bacterialmodel_v5.R"
 wth_file   <- file.path("obs", "ID101.csv")
 out_dir    <- "Output"
 
