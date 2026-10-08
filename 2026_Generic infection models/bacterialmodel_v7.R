@@ -258,10 +258,10 @@ temp_response <- function(T, T_min, T_opt, T_max){
 # f_RH(RH) = 1 / (1 + exp[-k_w * (RH - RH_th)])
 # RH_th: RH threshold where the response reaches 0.5
 #        (rh_thresh_M for multiplication, rh_thresh_I for infection)
-# k_w  : logistic slope (fixed at 0.3)
+# k  : logistic slope)
 
-rh_response <- function(RH, RH_th, k_w = 0.3){
-  plogis(k_w * (RH - RH_th))
+rh_response <- function(RH, RH_th, k = 0.3){
+  plogis(k * (RH - RH_th))
 }
 
 # -------------------------------
@@ -271,7 +271,7 @@ rh_response <- function(RH, RH_th, k_w = 0.3){
 # W(RH, Rain) = 1                                  if Rain >= Rain_th
 #             = 1 / (1 + exp[-k * (RH - RH_th)])   if Rain <  Rain_th
 
-wetness_response <- function(RH, Rain, RH_th, Rain_th, k = 0.3){
+wetness_response <- function(RH, Rain, RH_th, Rain_th, k = 1){
   ifelse(Rain >= Rain_th, 1, rh_response(RH, RH_th, k))
 }
 
