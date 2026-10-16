@@ -3,11 +3,11 @@
 # - Multiplication–Dispersal–Infection structure, Risk = N × D × I
 # - Base modules (all diseases):
 #     N : discrete logistic growth, r = mu_max × f_T(T) × f_RH(RH)
-#     D : D = K_d (constant, fittable)
+#     D : D = K_d (constant, fittable), used when no dispersal add-on is on
 #     I : I = W(RH, Rain)
 # - Add-on modules (switched on per disease):
 #     D : weather-driven dispersal (rain, wind, rain × wind) and insect pathway
-#         D = K_d × D_add,  D_add = 1 - (1 - D_weather)(1 - D_insect)
+#         replace the base constant: D = D_add = 1 - (1 - D_weather)(1 - D_insect)
 #     I : temperature response f_T(T) and host vulnerable period V
 #         I = W(RH, Rain) × f_T(T) × V
 #   With every add-on switched off, v9 is identical to v8.
@@ -60,7 +60,8 @@ disease_params <- list(
                            # f_RH(RH) in growth rate reaches 0.5 at this RH
 
     # ---- base: dispersal (D) ----
-    K_d = 1.00,            # Dispersal coefficient (constant, 0-1)  [v8: 0.20]
+    K_d = 0.20,            # Dispersal coefficient (constant, 0-1)
+                           # used only when no dispersal add-on is on
 
     # ---- base: infection (I) ----
     rh_thresh_I = 42.0641, # RH threshold for infection module (%)  [v8: 90]
@@ -98,7 +99,7 @@ disease_params <- list(
     T_max = 35,
     rh_thresh_M = 50,
 
-    K_d = 1.00,            # D = D_add (weather-driven, as in v7)
+    K_d = 0.20,            # used only when no dispersal add-on is on
 
     rh_thresh_I = 90,
     rain_thresh = 0.25,
@@ -129,7 +130,7 @@ disease_params <- list(
     T_max = 38,
     rh_thresh_M = 50,
 
-    K_d = 1.00,            # D = D_add (weather-driven, as in v7)
+    K_d = 0.20,            # used only when no dispersal add-on is on
 
     rh_thresh_I = 90,
     rain_thresh = 0.25,
@@ -314,17 +315,13 @@ calc_population <- function(data, disease_param, growth_period){
 # 7. DISPERSAL (D)
 # -------------------------------
 
-# Add-on: weather-driven and insect dispersal (1 when no add-on is used)
+# Add-on: weather-driven and insect dispersal
 #   E_total   = a_rain × Rain + a_wind × Wind + a_int × Rain × Wind
 #   D_weather = 1 - exp(-E_total)
 #   D_add     = 1 - (1 - D_weather)(1 - D_insect)
 calc_dispersal_addon <- function(data, disease_param){
 
   p <- disease_param
-  if(!(p$use_rain || p$use_wind || p$use_interaction || p$use_insect)){
-    return(rep(1, nrow(data)))
-  }
-
   total_effect <- rep(0, nrow(data))
   if(p$use_rain){
     total_effect <- total_effect + p$rain_coeff * data$rain
@@ -344,9 +341,18 @@ calc_dispersal_addon <- function(data, disease_param){
   }
 }
 
-# Base × add-on: D = K_d × D_add
+use_dispersal_addon <- function(p){
+  p$use_rain || p$use_wind || p$use_interaction || p$use_insect
+}
+
+# Base: D = K_d when no dispersal add-on is used.
+# Add-on: D = D_add (weather / insect pathways), K_d is not used.
 calc_dispersal <- function(data, disease_param){
-  disease_param$K_d * calc_dispersal_addon(data, disease_param)
+  if(use_dispersal_addon(disease_param)){
+    calc_dispersal_addon(data, disease_param)
+  } else {
+    rep(disease_param$K_d, nrow(data))
+  }
 }
 
 # -------------------------------
