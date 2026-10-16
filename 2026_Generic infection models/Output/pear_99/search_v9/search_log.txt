@@ -7,3 +7,6 @@
 [12:10:16] v9 plan A (7 parameters) + k_M                          k= 8  LOSO RMSE 0.2169  R2 0.458  r 0.690  rho 0.639  AUCinf 0.960
 [12:10:25] v9 plan A (7 parameters) + k_I                          k= 8  LOSO RMSE 0.2225  R2 0.429  r 0.660  rho 0.582  AUCinf 0.919
 [12:10:31] v9 plan A (7 parameters) + T_opt_I                      k= 8  LOSO RMSE 0.2179  R2 0.453  r 0.676  rho 0.587  AUCinf 0.926
+[12:10:41] v9 plan A (7 parameters) + rh_thresh_M + T_min          k= 9  LOSO RMSE 0.2026  R2 0.527  r 0.731  rho 0.611  AUCinf 0.948
+[12:10:47] v9 plan A (7 parameters) + rh_thresh_M + T_max          k= 9  LOSO RMSE 0.2103  R2 0.490  r 0.706  rho 0.626  AUCinf 0.935
+[12:10:55] v9 plan A (7 parameters) + rh_thresh_M + k_M            k= 9  LOSO RMSE 0.2106  R2 0.489  r 0.705  rho 0.624  AUCinf 0.935
