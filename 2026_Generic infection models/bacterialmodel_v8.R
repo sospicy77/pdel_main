@@ -2,7 +2,7 @@
 # Generic Bacterial Infection Model (v8)
 # - Multiplication–Dispersal–Infection structure
 # - Risk = N × D × I
-# - Different dispersal pathways per disease
+# - Dispersal as a constant, fittable parameter (D = K_d)
 #############################################
 
 # -------------------------------
@@ -15,8 +15,7 @@ data <- data.frame(
   date = seq(as.Date("2024-04-01"), as.Date("2024-04-30"), by = "day"),
   temp = runif(30, 5, 35),      # daily mean temperature (°C)
   rh   = runif(30, 50, 100),    # relative humidity (%)
-  rain = runif(30, 0, 20),      # rainfall amount (mm)
-  wind = runif(30, 0, 10)       # wind speed (m/s)
+  rain = runif(30, 0, 20)       # rainfall amount (mm)
 )
 
 # -------------------------------
@@ -52,17 +51,9 @@ disease_params <- list(
     rain_thresh = 0.25,    # Rainfall threshold (mm)
                            # Wetness response = 1 when daily rain >= this value
 
-    rain_coeff = 0.055,    # Rain-driven dispersal coefficient
-    wind_coeff = 0.030,    # Wind-driven dispersal coefficient
-    interaction_coeff = 0.0030,  # Rain × wind interaction coefficient
-    insect_coeff = 0.10,   # Insect-mediated dispersal probability
-                           # (independent of weather)
-
-    use_rain = TRUE,       # Include rain dispersal pathway
-    use_wind = TRUE,       # Include wind dispersal pathway
-    use_interaction = TRUE,# Include rain × wind interaction pathway
-    use_insect = TRUE,     # Include insect-mediated dispersal
-    use_dispersal = TRUE   # Calculate dispersal module D (FALSE: D = 1)
+    K_d = 0.20             # Dispersal coefficient (constant, 0-1)
+                           # D = K_d; to be fitted to observed data
+                           # or other model results
   ),
 
   bacterial_spot = list(  ##고추세균성점무늬병
@@ -81,17 +72,7 @@ disease_params <- list(
     rh_thresh_I = 90,
     rain_thresh = 0.25,
 
-    # Mainly rain splash / wetness-driven.
-    rain_coeff = 0.070,
-    wind_coeff = 0.005,
-    interaction_coeff = 0.0005,
-    insect_coeff = 0.00,
-
-    use_rain = TRUE,
-    use_wind = FALSE,
-    use_interaction = FALSE,
-    use_insect = FALSE,
-    use_dispersal = TRUE
+    K_d = 0.20
   ),
 
   bacterial_blight = list( ##벼 흰잎마름병
@@ -109,17 +90,7 @@ disease_params <- list(
     rh_thresh_I = 90,
     rain_thresh = 0.25,
 
-    # Strong winds and continuous heavy rain favor spread.
-    rain_coeff = 0.060,
-    wind_coeff = 0.030,
-    interaction_coeff = 0.0030,
-    insect_coeff = 0.00,
-
-    use_rain = TRUE,
-    use_wind = TRUE,
-    use_interaction = TRUE,
-    use_insect = FALSE,
-    use_dispersal = TRUE
+    K_d = 0.20
   ),
 
   ralstonia = list(  ##고추풋마름병
@@ -139,17 +110,8 @@ disease_params <- list(
     rh_thresh_I = 90,
     rain_thresh = 0.25,
 
-    # Base module keeps aboveground dispersal off.
-    rain_coeff = 0.000,
-    wind_coeff = 0.000,
-    interaction_coeff = 0.000,
-    insect_coeff = 0.00,
-
-    use_rain = FALSE,
-    use_wind = FALSE,
-    use_interaction = FALSE,
-    use_insect = FALSE,
-    use_dispersal = FALSE
+    # No aboveground dispersal limitation (D = 1).
+    K_d = 1.00
   )
 )
 
@@ -180,12 +142,8 @@ validate_disease_params <- function(p){
     stop("rain_thresh must be non-negative.")
   }
 
-  if(p$rain_coeff < 0 || p$wind_coeff < 0 || p$interaction_coeff < 0){
-    stop("Dispersal coefficients must be non-negative.")
-  }
-
-  if(p$insect_coeff < 0 || p$insect_coeff > 1){
-    stop("insect_coeff must be between 0 and 1.")
+  if(p$K_d < 0 || p$K_d > 1){
+    stop("K_d must be between 0 and 1.")
   }
 }
 
@@ -270,36 +228,9 @@ calc_population <- function(data, disease_param, growth_period){
 # 7. DISPERSAL (D)
 # -------------------------------
 
+# D = K_d (constant dispersal coefficient)
 calc_dispersal <- function(data, disease_param){
-
-  if(!disease_param$use_dispersal){
-    return(rep(1, nrow(data)))
-  }
-
-  total_effect <- rep(0, nrow(data))
-
-  if(disease_param$use_rain){
-    total_effect <- total_effect +
-      disease_param$rain_coeff * data$rain
-  }
-
-  if(disease_param$use_wind){
-    total_effect <- total_effect +
-      disease_param$wind_coeff * data$wind
-  }
-
-  if(disease_param$use_interaction){
-    total_effect <- total_effect +
-      disease_param$interaction_coeff * data$rain * data$wind
-  }
-
-  D <- 1 - exp(-total_effect)
-
-  if(disease_param$use_insect){
-    D <- 1 - (1 - D) * (1 - disease_param$insect_coeff)
-  }
-
-  D
+  rep(disease_param$K_d, nrow(data))
 }
 
 # -------------------------------
