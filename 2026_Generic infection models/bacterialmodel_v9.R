@@ -1,10 +1,16 @@
 #############################################
 # Generic Bacterial Infection Model (v9)
-# - Multiplication–Dispersal–Infection structure
-# - Risk = N × D × I
-# - Dispersal as a constant, fittable parameter (D = K_d)
-# - fire_blight parameters calibrated to the pear fire blight model
-#   (v8-fit2: hourly_99 / CF-99, 2010-2025, target (BIR - 25) / 75)
+# - Multiplication–Dispersal–Infection structure, Risk = N × D × I
+# - Base modules (all diseases):
+#     N : discrete logistic growth, r = mu_max × f_T(T) × f_RH(RH)
+#     D : D = K_d (constant, fittable)
+#     I : I = W(RH, Rain)
+# - Add-on modules (switched on per disease):
+#     D : weather-driven dispersal (rain, wind, rain × wind) and insect pathway
+#         D = K_d × D_add,  D_add = 1 - (1 - D_weather)(1 - D_insect)
+#     I : temperature response f_T(T) and host vulnerable period V
+#         I = W(RH, Rain) × f_T(T) × V
+#   With every add-on switched off, v9 is identical to v8.
 #############################################
 
 # -------------------------------
@@ -17,7 +23,12 @@ data <- data.frame(
   date = seq(as.Date("2024-04-01"), as.Date("2024-04-30"), by = "day"),
   temp = runif(30, 5, 35),      # daily mean temperature (°C)
   rh   = runif(30, 50, 100),    # relative humidity (%)
-  rain = runif(30, 0, 20)       # rainfall amount (mm)
+  rain = runif(30, 0, 20),      # rainfall amount (mm)
+  wind = runif(30, 0, 10),      # wind speed (m/s), needed only if use_wind / use_interaction
+  vulnerable_period = ifelse(1:30 %in% 10:20, 1, 0)
+  # vulnerable_period (needed only if use_vulnerable_period):
+  # 1 = host tissue / growth stage is vulnerable (flowering, young tissue, wounds)
+  # 0 = host is not in a vulnerable stage
 )
 
 # -------------------------------
@@ -35,28 +46,43 @@ global_params <- list(
 disease_params <- list(
 
   fire_blight = list(  ##화상병
-    N0 = 0.0496,           # Initial inoculum pressure (0-1)        [v8: 0.15]
-
-    mu_max = 2.00,         # Maximum bacterial growth rate          [v8: 0.30]
+    # Calibrated to the pear fire blight model (Maryblyt-type BIR):
+    # hourly_99 / CF-99, 2010-2025 bloom periods, target (BIR - 25) / 75.
+    # [v8: ...] = value in bacterialmodel_v8.R
+    # ---- base: multiplication (N) ----
+    N0 = 0.1317,           # Initial inoculum pressure (0-1)        [v8: 0.15]
+    mu_max = 1.5410,       # Maximum bacterial growth rate          [v8: 0.30]
                            # Growth rate under optimal temperature and RH
-
     T_min = 4,             # Minimum temperature for growth (°C)
-    T_opt = 32.7284,       # Optimum temperature for growth (°C)    [v8: 28]
+    T_opt = 26.5422,       # Optimum temperature (°C), N and f_T in I [v8: 28]
     T_max = 36,            # Maximum temperature for growth (°C)
-
     rh_thresh_M = 50,      # RH threshold for multiplication module (%)
                            # f_RH(RH) in growth rate reaches 0.5 at this RH
 
-    rh_thresh_I = 46.5338, # RH threshold for infection module (%)  [v8: 90]
-                           # Wetness response W(RH, Rain) reaches 0.5 at this RH
+    # ---- base: dispersal (D) ----
+    K_d = 1.00,            # Dispersal coefficient (constant, 0-1)  [v8: 0.20]
 
+    # ---- base: infection (I) ----
+    rh_thresh_I = 42.0641, # RH threshold for infection module (%)  [v8: 90]
+                           # Wetness response W(RH, Rain) reaches 0.5 at this RH
     rain_thresh = 0.05,    # Rainfall threshold (mm)                [v8: 0.25]
                            # (fitted ~0: any measurable rain, 0.1 mm resolution)
                            # Wetness response = 1 when daily rain >= this value
 
-    K_d = 1.00             # Dispersal coefficient (constant, 0-1)  [v8: 0.20]
-                           # D = K_d; to be fitted to observed data
-                           # or other model results
+    # ---- add-on: weather-driven / insect dispersal ----
+    use_rain = TRUE,       # rain splash pathway
+    use_wind = FALSE,      # wind pathway (needs wind data; not calibrated: no wind in hourly_99)
+    use_interaction = FALSE,  # rain × wind pathway (needs wind data; not calibrated)
+    use_insect = TRUE,     # insect pathway (weather independent)
+    rain_coeff = 1.00,     # a_rain: rain-driven dispersal coefficient [v7: 0.055]
+    wind_coeff = 0.030,    # a_wind: wind-driven dispersal coefficient (v7 value)
+    interaction_coeff = 0.0030,  # a_int: rain × wind interaction coefficient (v7 value)
+    insect_coeff = 0.6767, # D_insect: insect-mediated dispersal probability (0-1) [v7: 0.10]
+
+    # ---- add-on: infection ----
+    use_temp_I = TRUE,     # temperature response f_T(T) in I
+    use_vulnerable_period = TRUE   # host vulnerable period V in I (bloom)
+                                   # (V = 1 on all calibration days)
   ),
 
   bacterial_spot = list(  ##고추세균성점무늬병
@@ -70,12 +96,25 @@ disease_params <- list(
     T_min = 5,
     T_opt = 29,
     T_max = 35,
-
     rh_thresh_M = 50,
+
+    K_d = 1.00,            # D = D_add (weather-driven, as in v7)
+
     rh_thresh_I = 90,
     rain_thresh = 0.25,
 
-    K_d = 0.20
+    # Mainly rain splash / wetness-driven.
+    use_rain = TRUE,
+    use_wind = FALSE,
+    use_interaction = FALSE,
+    use_insect = FALSE,
+    rain_coeff = 0.070,
+    wind_coeff = 0.005,
+    interaction_coeff = 0.0005,
+    insect_coeff = 0.00,
+
+    use_temp_I = TRUE,
+    use_vulnerable_period = TRUE
   ),
 
   bacterial_blight = list( ##벼 흰잎마름병
@@ -88,12 +127,25 @@ disease_params <- list(
     T_min = 10,
     T_opt = 30,
     T_max = 38,
-
     rh_thresh_M = 50,
+
+    K_d = 1.00,            # D = D_add (weather-driven, as in v7)
+
     rh_thresh_I = 90,
     rain_thresh = 0.25,
 
-    K_d = 0.20
+    # Strong winds and continuous heavy rain favor spread.
+    use_rain = TRUE,
+    use_wind = TRUE,
+    use_interaction = TRUE,
+    use_insect = FALSE,
+    rain_coeff = 0.060,
+    wind_coeff = 0.030,
+    interaction_coeff = 0.0030,
+    insect_coeff = 0.00,
+
+    use_temp_I = TRUE,
+    use_vulnerable_period = TRUE
   ),
 
   ralstonia = list(  ##고추풋마름병
@@ -110,11 +162,24 @@ disease_params <- list(
 
     # RH is only a weak proxy here; later soil moisture/root infection module needed.
     rh_thresh_M = 50,
+
+    # No aboveground dispersal limitation (D = 1): base module only.
+    K_d = 1.00,
+
     rh_thresh_I = 90,
     rain_thresh = 0.25,
 
-    # No aboveground dispersal limitation (D = 1).
-    K_d = 1.00
+    use_rain = FALSE,
+    use_wind = FALSE,
+    use_interaction = FALSE,
+    use_insect = FALSE,
+    rain_coeff = 0.000,
+    wind_coeff = 0.000,
+    interaction_coeff = 0.000,
+    insect_coeff = 0.00,
+
+    use_temp_I = TRUE,
+    use_vulnerable_period = FALSE
   )
 )
 
@@ -148,13 +213,31 @@ validate_disease_params <- function(p){
   if(p$K_d < 0 || p$K_d > 1){
     stop("K_d must be between 0 and 1.")
   }
+
+  if(p$rain_coeff < 0 || p$wind_coeff < 0 || p$interaction_coeff < 0){
+    stop("Dispersal coefficients must be non-negative.")
+  }
+
+  if(p$insect_coeff < 0 || p$insect_coeff > 1){
+    stop("insect_coeff must be between 0 and 1.")
+  }
+}
+
+validate_data <- function(data, p){
+  need <- c("date", "temp", "rh", "rain")
+  if(p$use_wind || p$use_interaction) need <- c(need, "wind")
+  if(p$use_vulnerable_period) need <- c(need, "vulnerable_period")
+  missing <- setdiff(need, names(data))
+  if(length(missing) > 0){
+    stop("Input data are missing column(s): ", paste(missing, collapse = ", "))
+  }
 }
 
 # -------------------------------
 # 5. RESPONSE FUNCTIONS
 # -------------------------------
 
-# Cardinal temperature response (0-1), used in the multiplication module
+# Cardinal temperature response (0-1), used in N and (add-on) in I
 temp_response <- function(T, T_min, T_opt, T_max){
 
   response <- rep(0, length(T))
@@ -231,24 +314,69 @@ calc_population <- function(data, disease_param, growth_period){
 # 7. DISPERSAL (D)
 # -------------------------------
 
-# D = K_d (constant dispersal coefficient)
+# Add-on: weather-driven and insect dispersal (1 when no add-on is used)
+#   E_total   = a_rain × Rain + a_wind × Wind + a_int × Rain × Wind
+#   D_weather = 1 - exp(-E_total)
+#   D_add     = 1 - (1 - D_weather)(1 - D_insect)
+calc_dispersal_addon <- function(data, disease_param){
+
+  p <- disease_param
+  if(!(p$use_rain || p$use_wind || p$use_interaction || p$use_insect)){
+    return(rep(1, nrow(data)))
+  }
+
+  total_effect <- rep(0, nrow(data))
+  if(p$use_rain){
+    total_effect <- total_effect + p$rain_coeff * data$rain
+  }
+  if(p$use_wind){
+    total_effect <- total_effect + p$wind_coeff * data$wind
+  }
+  if(p$use_interaction){
+    total_effect <- total_effect + p$interaction_coeff * data$rain * data$wind
+  }
+  D_weather <- 1 - exp(-total_effect)
+
+  if(p$use_insect){
+    1 - (1 - D_weather) * (1 - p$insect_coeff)
+  } else {
+    D_weather
+  }
+}
+
+# Base × add-on: D = K_d × D_add
 calc_dispersal <- function(data, disease_param){
-  rep(disease_param$K_d, nrow(data))
+  disease_param$K_d * calc_dispersal_addon(data, disease_param)
 }
 
 # -------------------------------
 # 8. INFECTION (I)
 # -------------------------------
 
-# I = W(RH, Rain)
+# Base W(RH, Rain) × add-ons f_T(T) and V
 calc_infection <- function(data, disease_param){
 
-  wetness_response(
+  I <- wetness_response(
     data$rh,
     data$rain,
     disease_param$rh_thresh_I,
     disease_param$rain_thresh
   )
+
+  if(disease_param$use_temp_I){
+    I <- I * temp_response(
+      data$temp,
+      disease_param$T_min,
+      disease_param$T_opt,
+      disease_param$T_max
+    )
+  }
+
+  if(disease_param$use_vulnerable_period){
+    I <- I * data$vulnerable_period
+  }
+
+  I
 }
 
 # -------------------------------
@@ -258,6 +386,7 @@ calc_infection <- function(data, disease_param){
 run_model <- function(data, disease_param, growth_period = 3){
 
   validate_disease_params(disease_param)
+  validate_data(data, disease_param)
 
   N <- calc_population(data, disease_param, growth_period)
   D <- calc_dispersal(data, disease_param)
