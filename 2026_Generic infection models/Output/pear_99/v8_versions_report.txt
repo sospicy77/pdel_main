@@ -1,0 +1,71 @@
+Station CF-99 (obs/hourly_99), seasons 2010 - 2025 | bloom days: 338 | infection days: 16 in 9 seasons
+Gold-standard BIR distribution:
+BIR
+ 25  50  75 100 
+144 115  63  16 
+
+Parameters (v8-fit fitted at ID1001 2019; not refitted here)
+   parameter v8_current  v8_fit
+         K_d       0.20  0.9165
+          N0       0.15  0.3337
+      mu_max       0.30  1.4129
+       T_opt      28.00 35.5000
+ rh_thresh_I      90.00 40.0000
+ rain_thresh       0.25  0.0000
+
+Pooled metrics (Risk vs BIR/100), change = v8-fit - v8, 95% CI from 2000 season-block bootstrap resamples
+    metric     v8 v8_fit change change_CI_low change_CI_high better significant
+      RMSE  0.500  0.221 -0.279        -0.334         -0.227 v8-fit        TRUE
+       MAE  0.452  0.182 -0.270        -0.326         -0.219 v8-fit        TRUE
+      Bias -0.452  0.125  0.577         0.539          0.612 v8-fit          NA
+        R2 -4.130  0.000  4.130         3.516          5.043 v8-fit        TRUE
+   Pearson  0.406  0.564  0.158        -0.060          0.351 v8-fit       FALSE
+  Spearman  0.451  0.527  0.076        -0.131          0.276 v8-fit       FALSE
+ AUC_BIR50  0.811  0.738 -0.072        -0.175          0.012     v8       FALSE
+ AUC_BIR75  0.583  0.853  0.270         0.133          0.397 v8-fit        TRUE
+   AUC_inf  0.918  0.905 -0.013        -0.168          0.090     v8       FALSE
+ Class_acc  0.426  0.367 -0.059        -0.206          0.091     v8       FALSE
+
+Mean Risk by BIR class
+          25    50    75   100
+v8     0.000 0.023 0.007 0.045
+v8_fit 0.528 0.580 0.694 0.775
+
+Per-season metrics
+ season days infection_days RMSE_v8 RMSE_v8fit Spearman_v8 Spearman_v8fit
+   2010   24              1   0.563      0.139       0.026          0.810
+   2011   23              4   0.537      0.245       0.767          0.626
+   2012   20              0   0.615      0.165      -0.199          0.768
+   2013   23              1   0.537      0.223       0.088          0.583
+   2014   21              0   0.396      0.292       0.478          0.265
+   2015   23              2   0.555      0.199       0.527          0.430
+   2016   20              0   0.427      0.277       0.732         -0.255
+   2017   20              0   0.447      0.215       0.130          0.020
+   2018   23              0   0.449      0.191       0.505          0.424
+   2019   20              1   0.491      0.262       0.235          0.655
+   2020   25              0   0.283      0.183       0.563          0.393
+   2021   20              0   0.333      0.221       0.454          0.019
+   2022   18              2   0.618      0.174       0.777          0.718
+   2023   19              1   0.478      0.276       0.204         -0.545
+   2024   19              1   0.589      0.206       0.311          0.779
+   2025   20              3   0.577      0.221       0.721          0.667
+ AUC_BIR50_v8 AUC_BIR50_v8fit
+        0.737           0.884
+        0.892           0.754
+        0.889           0.806
+        0.708           0.642
+        0.755           0.636
+        0.902           0.625
+        0.989           0.275
+        0.604           0.500
+        0.881           0.738
+        0.656           0.854
+        1.000           0.848
+        0.786           0.512
+        0.908           0.815
+        0.678           0.267
+        0.821           0.987
+        0.969           0.792
+
+Seasons where v8-fit has lower RMSE: 16 of 16 
+Seasons where v8-fit has higher Spearman: 5 of 16 

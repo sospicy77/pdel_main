@@ -25,6 +25,7 @@ fireblight.org API, and fixes the errors found in the original code:
 
 Usage:
   python3 pear_fire_blight_fixed.py obs/ID1001.csv 2019 Output/pear_ID1001_2019
+  python3 pear_fire_blight_fixed.py obs/hourly_99 2010 2011 ... 2025 Output/pear_99
   (add --chill-complete to assume endodormancy is released at season start;
    add --force-bloom START END to treat START..END as the bloom period,
    a what-if scenario for testing other models)
@@ -57,25 +58,62 @@ EIP_A, EIP_B, EIP_C = -0.0031, 1.6273, -1.7298
 EIP_X_MAX = -EIP_B / (2 * EIP_A)   # vertex of the modified EIP polynomial
 
 
-def read_hourly(path):
-    """Read KMA-style hourly CSV (cp949) and return tm, ta, rn, hm."""
-    raw = pd.read_csv(path, encoding="cp949")
-    cols = {raw.columns[1]: "tm", raw.columns[2]: "ta",
-            raw.columns[5]: "rn", raw.columns[8]: "hm"}
-    h = raw.rename(columns=cols)[["tm", "ta", "rn", "hm"]]
-    h["tm"] = pd.to_datetime(h["tm"])          # local time (KST), no tz
-    h = h.drop_duplicates("tm").set_index("tm").sort_index()
+MAX_GAP_HOURS = 6       # interpolation limit from each side of a gap (gaps up to 12 h filled)
 
-    # Fill missing hours: temperature / RH interpolated, rain = 0
-    full = pd.date_range(h.index.min().normalize(),
-                         h.index.max().normalize() + pd.Timedelta(hours=23),
+
+def read_hourly(path):
+    """Read hourly weather and return tm, ta, rn, hm (invalid values -> NaN).
+
+    Supported formats
+      - KMA download (cp949): 지점, 일시, 기온, ..., 강수량, ..., 습도, ...
+      - Id, data_tm, ta, hm, rn
+    """
+    try:
+        raw = pd.read_csv(path)
+    except UnicodeDecodeError:
+        raw = pd.read_csv(path, encoding="cp949")
+
+    if "data_tm" in raw.columns:
+        h = raw.rename(columns={"data_tm": "tm"})[["tm", "ta", "rn", "hm"]]
+    else:
+        cols = {raw.columns[1]: "tm", raw.columns[2]: "ta",
+                raw.columns[5]: "rn", raw.columns[8]: "hm"}
+        h = raw.rename(columns=cols)[["tm", "ta", "rn", "hm"]]
+    h["tm"] = pd.to_datetime(h["tm"])          # local time (KST), no tz
+    h = h.drop_duplicates("tm").sort_values("tm").reset_index(drop=True)
+
+    # Missing-value codes (e.g. -999) and impossible values -> NaN.
+    # A record with a missing temperature is treated as missing as a whole.
+    bad_ta = (h["ta"] < -50) | (h["ta"] > 60)
+    h.loc[bad_ta, ["ta", "rn", "hm"]] = np.nan
+    h.loc[(h["hm"] < 0) | (h["hm"] > 100), "hm"] = np.nan
+    h.loc[h["rn"] < 0, "rn"] = np.nan
+    return h
+
+
+def season_hourly(h, year):
+    """Hourly series for one season (Oct 1 of year-1 .. Jun 30 of year).
+
+    Missing hours and invalid values: temperature / RH interpolated, up to
+    MAX_GAP_HOURS from each side of a gap (gaps up to 2 x MAX_GAP_HOURS are
+    filled); rain set to 0. Longer gaps raise an error.
+    """
+    s = h[(h["tm"] >= pd.Timestamp(year - 1, 10, 1)) &
+          (h["tm"] < pd.Timestamp(year, 7, 1))].set_index("tm")
+    if s.empty:
+        raise RuntimeError(f"No data for season {year}.")
+    full = pd.date_range(s.index.min().normalize(),
+                         s.index.max().normalize() + pd.Timedelta(hours=23),
                          freq="h")
-    n_missing = len(full.difference(h.index))
-    h = h.reindex(full)
-    h[["ta", "hm"]] = h[["ta", "hm"]].interpolate(limit_direction="both")
-    h["rn"] = h["rn"].fillna(0)
-    h.index.name = "tm"
-    return h.reset_index(), n_missing
+    s = s.reindex(full)
+    n_missing = int(s[["ta", "hm"]].isna().any(axis=1).sum())
+    s[["ta", "hm"]] = s[["ta", "hm"]].interpolate(
+        limit=MAX_GAP_HOURS, limit_direction="both", limit_area=None)
+    s["rn"] = s["rn"].fillna(0)
+    if s[["ta", "hm"]].isna().any().any():
+        raise RuntimeError(f"Season {year}: gap longer than {MAX_GAP_HOURS} h.")
+    s.index.name = "tm"
+    return s.reset_index(), n_missing
 
 
 def daily_from_hourly(h):
@@ -249,13 +287,9 @@ def symptoms(d, start, infection_days):
 
 
 def run(path, year, chill_complete=False, force_bloom=None):
-    h, n_missing = read_hourly(path)
+    hourly = read_hourly(path) if isinstance(path, str) else path
+    h, n_missing = season_hourly(hourly, year)
     d = daily_from_hourly(h)
-    season = (d["tm"] >= pd.Timestamp(year - 1, 10, 1)) & \
-             (d["tm"] <= pd.Timestamp(year, 6, 30))
-    h = h[(h["tm"] >= pd.Timestamp(year - 1, 10, 1)) &
-          (h["tm"] < pd.Timestamp(year, 7, 1))].reset_index(drop=True)
-    d = d[season].reset_index(drop=True)
 
     ph = phenology(h, year, chill_complete)
     if force_bloom is not None:
@@ -296,24 +330,48 @@ def run(path, year, chill_complete=False, force_bloom=None):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("weather")
-    ap.add_argument("year", type=int)
+    ap.add_argument("years", type=int, nargs="+",
+                    help="season year(s): 2019 = 2018-10-01 .. 2019-06-30")
     ap.add_argument("out_dir")
     ap.add_argument("--chill-complete", action="store_true")
     ap.add_argument("--force-bloom", nargs=2, metavar=("START", "END"))
     a = ap.parse_args()
 
-    d, info = run(a.weather, a.year, a.chill_complete, a.force_bloom)
     os.makedirs(a.out_dir, exist_ok=True)
     tag = ("_chillcomplete" if a.chill_complete else "") + \
           ("_forcebloom" if a.force_bloom else "")
-    d.to_csv(os.path.join(a.out_dir, f"pear_daily_{a.year}{tag}.csv"),
-             index=False, float_format="%.4f")
-    with open(os.path.join(a.out_dir, f"pear_summary_{a.year}{tag}.txt"),
-              "w") as f:
-        for k, v in info.items():
-            f.write(f"{k}: {v}\n")
-    for k, v in info.items():
-        print(f"{k}: {v}")
+    hourly = read_hourly(a.weather)
+    rows = []
+    for year in a.years:
+        try:
+            d, info = run(hourly, year, a.chill_complete, a.force_bloom)
+        except RuntimeError as err:
+            print(f"[skip] {err}")
+            rows.append(dict(season=year, status=str(err)))
+            continue
+        d.to_csv(os.path.join(a.out_dir, f"pear_daily_{year}{tag}.csv"),
+                 index=False, float_format="%.4f")
+        with open(os.path.join(a.out_dir, f"pear_summary_{year}{tag}.txt"),
+                  "w") as f:
+            for k, v in info.items():
+                f.write(f"{k}: {v}\n")
+        b = d[d["B"]]
+        rows.append(dict(season=year, status="ok",
+                         GT=info["GT"].date(), B1=info["B1"].date(),
+                         FB=info["FB"].date(), PF=info["PF"].date(),
+                         chill_release=info["chill_release"],
+                         bloom_days=len(b), H=int(b["H"].sum()),
+                         W=int(b["W"].sum()), T=int(b["T"].sum()),
+                         infection_days=int(b["infection"].sum()),
+                         missing_hours=info["missing_hours"]))
+        if len(a.years) == 1:
+            for k, v in info.items():
+                print(f"{k}: {v}")
+    if len(a.years) > 1:
+        summary = pd.DataFrame(rows)
+        summary.to_csv(os.path.join(a.out_dir, f"pear_seasons{tag}.csv"),
+                       index=False)
+        print(summary.to_string(index=False))
 
 
 if __name__ == "__main__":
