@@ -1,0 +1,94 @@
+Final v9: v9 plan A (7 parameters) + rh_thresh_M + k_I + [dh_growth] + [prev_rain] | gp=4 
+
+Parameters (all seasons; LOSO range)
+        parameter   value LOSO_min LOSO_max lower  upper
+               N0  0.1529   0.1366   0.1683  0.01   0.99
+           mu_max  2.0000   2.0000   2.0000  0.00   2.00
+            T_opt 21.2062  20.8873  21.5558 10.50  34.50
+      rh_thresh_I 41.1785  36.6924  46.7538 20.00 100.00
+      rain_thresh  0.6700   0.2634   0.7714  0.00  10.00
+       rain_coeff  4.9875   4.9993   5.0000  0.00   5.00
+     insect_coeff  0.9026   0.8541   0.9473  0.00   1.00
+      rh_thresh_M  0.0000   0.0000   0.1091  0.00 100.00
+              k_I  0.0500   0.0500   0.0500  0.05   5.00
+         DH_scale 49.3842  45.2801  53.0348  1.00 300.00
+ rain_prev_thresh  2.3001   2.3005   2.5891  0.10  20.00
+
+Pooled out-of-sample metrics (338 bloom days)
+                     v8 v8_fit2 v9_prev v9_param v9_final
+RMSE              0.397   0.237   0.223    0.201    0.163
+MAE               0.274   0.190   0.183    0.167    0.136
+Bias             -0.274  -0.004  -0.014    0.000   -0.004
+R2_NSE           -0.813   0.353   0.429    0.535    0.695
+Pearson_r         0.406   0.594   0.658    0.740    0.835
+Spearman_rho      0.451   0.512   0.570    0.666    0.749
+Kendall_tau       0.349   0.412   0.460    0.543    0.621
+AUC_infection     0.918   0.908   0.925    0.973    0.992
+AUC_score_ge_1_3  0.811   0.737   0.767    0.818    0.861
+AUC_score_ge_2_3  0.583   0.830   0.865    0.918    0.967
+Class_acc         0.426   0.494   0.506    0.506    0.648
+
+Changes with 95% season-block bootstrap CI
+      comparison           metric change CI_low CI_high
+     final_vs_v8             RMSE -0.234 -0.279  -0.186
+     final_vs_v8              MAE -0.137 -0.190  -0.090
+     final_vs_v8             Bias  0.269  0.223   0.318
+     final_vs_v8           R2_NSE  1.508  1.251   1.866
+     final_vs_v8        Pearson_r  0.428  0.308   0.561
+     final_vs_v8     Spearman_rho  0.297  0.155   0.445
+     final_vs_v8      Kendall_tau  0.272  0.154   0.393
+     final_vs_v8    AUC_infection  0.074  0.013   0.165
+     final_vs_v8 AUC_score_ge_1_3  0.050 -0.024   0.129
+     final_vs_v8 AUC_score_ge_2_3  0.384  0.297   0.473
+     final_vs_v8        Class_acc  0.222  0.139   0.315
+ final_vs_v8fit2             RMSE -0.074 -0.099  -0.055
+ final_vs_v8fit2              MAE -0.054 -0.071  -0.039
+ final_vs_v8fit2             Bias  0.000 -0.034   0.035
+ final_vs_v8fit2           R2_NSE  0.343  0.240   0.501
+ final_vs_v8fit2        Pearson_r  0.241  0.149   0.371
+ final_vs_v8fit2     Spearman_rho  0.237  0.128   0.391
+ final_vs_v8fit2      Kendall_tau  0.209  0.116   0.333
+ final_vs_v8fit2    AUC_infection  0.085  0.012   0.252
+ final_vs_v8fit2 AUC_score_ge_1_3  0.124  0.060   0.205
+ final_vs_v8fit2 AUC_score_ge_2_3  0.137  0.067   0.234
+ final_vs_v8fit2        Class_acc  0.154  0.088   0.226
+ final_vs_v9prev             RMSE -0.060 -0.083  -0.040
+ final_vs_v9prev              MAE -0.047 -0.061  -0.034
+ final_vs_v9prev             Bias  0.010 -0.022   0.041
+ final_vs_v9prev           R2_NSE  0.267  0.171   0.406
+ final_vs_v9prev        Pearson_r  0.177  0.094   0.291
+ final_vs_v9prev     Spearman_rho  0.179  0.081   0.317
+ final_vs_v9prev      Kendall_tau  0.161  0.078   0.272
+ final_vs_v9prev    AUC_infection  0.067 -0.001   0.223
+ final_vs_v9prev AUC_score_ge_1_3  0.094  0.040   0.164
+ final_vs_v9prev AUC_score_ge_2_3  0.102  0.041   0.192
+ final_vs_v9prev        Class_acc  0.142  0.074   0.213
+ param_vs_v9prev             RMSE -0.022 -0.034  -0.010
+ param_vs_v9prev              MAE -0.016 -0.025  -0.007
+ param_vs_v9prev             Bias  0.014 -0.001   0.029
+ param_vs_v9prev           R2_NSE  0.107  0.045   0.184
+ param_vs_v9prev        Pearson_r  0.082  0.033   0.145
+ param_vs_v9prev     Spearman_rho  0.097  0.036   0.174
+ param_vs_v9prev      Kendall_tau  0.082  0.031   0.145
+ param_vs_v9prev    AUC_infection  0.048  0.002   0.166
+ param_vs_v9prev AUC_score_ge_1_3  0.051  0.017   0.093
+ param_vs_v9prev AUC_score_ge_2_3  0.053  0.013   0.100
+ param_vs_v9prev        Class_acc  0.000 -0.043   0.045
+  final_vs_param             RMSE -0.038 -0.053  -0.026
+  final_vs_param              MAE -0.031 -0.040  -0.022
+  final_vs_param             Bias -0.005 -0.029   0.018
+  final_vs_param           R2_NSE  0.160  0.106   0.231
+  final_vs_param        Pearson_r  0.094  0.050   0.151
+  final_vs_param     Spearman_rho  0.082  0.031   0.153
+  final_vs_param      Kendall_tau  0.078  0.032   0.137
+  final_vs_param    AUC_infection  0.019 -0.005   0.061
+  final_vs_param AUC_score_ge_1_3  0.043  0.013   0.080
+  final_vs_param AUC_score_ge_2_3  0.049  0.014   0.104
+  final_vs_param        Class_acc  0.142  0.085   0.203
+
+Mean prediction by BIR class
+       v8 v8_fit2 v9_prev v9_param v9_final
+25  0.000   0.196   0.175    0.173    0.121
+50  0.023   0.265   0.258    0.274    0.250
+75  0.007   0.426   0.415    0.450    0.551
+100 0.045   0.597   0.660    0.734    0.872

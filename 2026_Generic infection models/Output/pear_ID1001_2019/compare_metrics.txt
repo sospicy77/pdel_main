@@ -1,0 +1,130 @@
+
+==================================================
+MAIN: pear bloom period : 2019-03-26 ~ 2019-04-15 ( 21 days )
+==================================================
+Gold standard BIR distribution:
+BIR
+25 50 
+15  6 
+Days with H: 0  W: 6  T: 0  infection (BIR = 100): 0 
+
+v8 summary:
+             N   D      I   Risk
+Min.    0.1511 0.2 0.0000 0.0000
+1st Qu. 0.1702 0.2 0.0000 0.0000
+Median  0.1973 0.2 0.0000 0.0000
+Mean    0.1951 0.2 0.1905 0.0081
+3rd Qu. 0.2173 0.2 0.0000 0.0000
+Max.    0.2365 0.2 1.0000 0.0466
+
+Agreement of v8 Risk with BIR
+Pearson r   : 0.76 
+Spearman rho: 0.731 
+Mean v8 Risk by BIR class:
+    25     50 
+0.0000 0.0283 
+
+-- Target: BIR >= 50 (M or higher) | positives = 6 of 21 --
+AUC (v8 Risk): 0.967 
+Youden-optimal threshold: 1.08e-09 
+         TP          FP          FN          TN sensitivity specificity 
+      5.000       0.000       1.000      15.000       0.833       1.000 
+  precision    accuracy 
+      1.000       0.952 
+Fixed threshold Risk >= 0.01:
+         TP          FP          FN          TN sensitivity specificity 
+      4.000       0.000       2.000      15.000       0.667       1.000 
+  precision    accuracy 
+      1.000       0.905 
+
+-- Target: BIR >= 75 (H or higher) | positives = 0 of 21 --
+Only one class present: AUC / sensitivity cannot be estimated.
+
+-- Target: infection day (BIR = 100) | positives = 0 of 21 --
+Only one class present: AUC / sensitivity cannot be estimated.
+
+Component agreement
+pear W vs v8 I >= 0.5:
+         TP          FP          FN          TN sensitivity specificity 
+      4.000       0.000       2.000      15.000       0.667       1.000 
+  precision    accuracy 
+      1.000       0.905 
+AUC (v8 I for pear W): 0.967 
+Pearson r, v8 N vs pear EIP      : -0.001 
+Pearson r, v8 N vs daily mean temp: -0.005 
+
+==================================================
+SUPPLEMENTARY what-if: bloom forced 03-01..06-30 : 2019-03-01 ~ 2019-06-30 ( 122 days )
+==================================================
+Gold standard BIR distribution:
+BIR
+ 25  50  75 100 
+ 35  20  40  27 
+Days with H: 68  W: 45  T: 68  infection (BIR = 100): 27 
+
+v8 summary:
+             N   D      I   Risk
+Min.    0.1511 0.2 0.0000 0.0000
+1st Qu. 0.1848 0.2 0.0000 0.0000
+Median  0.2388 0.2 0.0000 0.0000
+Mean    0.2444 0.2 0.2869 0.0156
+3rd Qu. 0.3119 0.2 1.0000 0.0356
+Max.    0.3384 0.2 1.0000 0.0677
+
+Agreement of v8 Risk with BIR
+Pearson r   : 0.495 
+Spearman rho: 0.664 
+Mean v8 Risk by BIR class:
+    25     50     75    100 
+0.0000 0.0290 0.0000 0.0489 
+
+-- Target: BIR >= 50 (M or higher) | positives = 87 of 122 --
+AUC (v8 Risk): 0.904 
+Youden-optimal threshold: 1.19e-15 
+         TP          FP          FN          TN sensitivity specificity 
+     68.000       4.000      19.000      31.000       0.782       0.886 
+  precision    accuracy 
+      0.944       0.811 
+Fixed threshold Risk >= 0.01:
+         TP          FP          FN          TN sensitivity specificity 
+     35.000       0.000      52.000      35.000       0.402       1.000 
+  precision    accuracy 
+      1.000       0.574 
+
+-- Target: BIR >= 75 (H or higher) | positives = 67 of 122 --
+AUC (v8 Risk): 0.724 
+Youden-optimal threshold: 1.19e-15 
+         TP          FP          FN          TN sensitivity specificity 
+     51.000      21.000      16.000      34.000       0.761       0.618 
+  precision    accuracy 
+      0.708       0.697 
+Fixed threshold Risk >= 0.01:
+         TP          FP          FN          TN sensitivity specificity 
+     21.000      14.000      46.000      41.000       0.313       0.745 
+  precision    accuracy 
+      0.600       0.508 
+
+-- Target: infection day (BIR = 100) | positives = 27 of 122 --
+AUC (v8 Risk): 0.942 
+Youden-optimal threshold: 0.0489 
+         TP          FP          FN          TN sensitivity specificity 
+     21.000       2.000       6.000      93.000       0.778       0.979 
+  precision    accuracy 
+      0.913       0.934 
+Fixed threshold Risk >= 0.01:
+         TP          FP          FN          TN sensitivity specificity 
+     21.000      14.000       6.000      81.000       0.778       0.853 
+  precision    accuracy 
+      0.600       0.836 
+
+Component agreement
+pear W vs v8 I >= 0.5:
+         TP          FP          FN          TN sensitivity specificity 
+     35.000       0.000      10.000      77.000       0.778       1.000 
+  precision    accuracy 
+      1.000       0.918 
+AUC (v8 I for pear W): 0.959 
+Pearson r, v8 N vs pear EIP      : 0.77 
+Pearson r, v8 N vs daily mean temp: 0.831 
+AUC (v8 N for pear H): 0.922 
+AUC (v8 N for pear T): 0.931 

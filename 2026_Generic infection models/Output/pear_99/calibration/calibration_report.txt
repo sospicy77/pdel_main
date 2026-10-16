@@ -1,0 +1,73 @@
+CF-99 (hourly_99) seasons 2010 - 2025 | bloom days: 338 | infection days: 16 
+Gold-standard target: score = (BIR - 25) / 75
+BIR
+ 25  50  75 100 
+144 115  63  16 
+fast_risk vs run_model max |diff|: 0 
+Fits: 34 | starts per fit: 12 | run time: 0.2 min
+ALL fit: converged starts 10 of 12 
+
+Parameters
+   parameter      module    v8 v8_fit_ID1001 v8_fit2 v8_fit2_bound LOSO_min
+         K_d           D  0.20        0.9165  1.0000   upper bound   1.0000
+          N0           N  0.15        0.3337  0.0496                 0.0425
+      mu_max           N  0.30        1.4129  2.0000   upper bound   2.0000
+       T_opt     N (f_T) 28.00       35.5000 32.7284                31.7626
+ rh_thresh_I I (wetness) 90.00       40.0000 46.5338                41.8636
+ rain_thresh I (wetness)  0.25        0.0000  0.0000   lower bound   0.0000
+ LOSO_max target_BIR100_fit BIR100_bound lower  upper
+   1.0000            1.0000  upper bound  0.01   1.00
+   0.0543            0.2031               0.01   0.99
+   2.0000            1.3566               0.00   2.00
+  33.3930           35.5000  upper bound  4.50  35.50
+  47.0534           40.0000  lower bound 40.00 100.00
+   0.6995            0.0000  lower bound  0.00  10.00
+
+Pooled metrics (all 338 bloom days; v8_fit2_LOSO = out-of-sample)
+           metric     v8 v8_fit v8_fit2_LOSO v8_fit2_all_insample
+             RMSE  0.397  0.391        0.237                0.232
+              MAE  0.274  0.338        0.190                0.183
+             Bias -0.274  0.303       -0.004               -0.007
+           R2_NSE -0.813 -0.761        0.353                0.378
+               r2  0.165  0.318        0.353                0.378
+        Pearson_r  0.406  0.564        0.594                0.615
+     Spearman_rho  0.451  0.527        0.512                0.536
+      Kendall_tau  0.349  0.425        0.412                0.433
+    AUC_infection  0.918  0.905        0.908                0.911
+ AUC_score_ge_1_3  0.811  0.738        0.737                0.752
+ AUC_score_ge_2_3  0.583  0.853        0.830                0.841
+        Class_acc  0.426  0.260        0.494                0.500
+ change_fit2_vs_v8 change_CI_low change_CI_high
+            -0.160        -0.211         -0.109
+            -0.083        -0.139         -0.034
+             0.270         0.223          0.316
+             1.166         0.849          1.548
+             0.188         0.003          0.350
+             0.188         0.003          0.360
+             0.060        -0.134          0.253
+             0.063        -0.095          0.219
+            -0.010        -0.145          0.088
+            -0.074        -0.165          0.004
+             0.248         0.118          0.366
+             0.068        -0.015          0.161
+
+Mean prediction by BIR class
+       v8 v8_fit v8_fit2_loso v8_fit2_all
+25  0.000  0.528        0.196       0.184
+50  0.023  0.580        0.265       0.265
+75  0.007  0.694        0.426       0.431
+100 0.045  0.775        0.597       0.605
+
+Single-season calibration -> other 15 seasons (summary over 16 choices)
+        RMSE R2_NSE Pearson_r Spearman_rho AUC_infection
+min    0.235 -0.614     0.137        0.254         0.617
+median 0.281  0.072     0.490        0.480         0.909
+max    0.381  0.361     0.614        0.562         0.951
+
+Target choice diagnostic (in-sample, all seasons)
+      target  RMSE   MAE   Bias R2_NSE    r2 Pearson_r Spearman_rho Kendall_tau
+ (BIR-25)/75 0.232 0.183 -0.007  0.378 0.378     0.615        0.536       0.433
+     BIR/100 0.297 0.248  0.175 -0.019 0.353     0.594        0.524       0.422
+ AUC_infection AUC_score_ge_1_3 AUC_score_ge_2_3 Class_acc mean_I
+         0.911            0.752            0.841     0.500  0.886
+         0.905            0.737            0.851     0.373  1.000

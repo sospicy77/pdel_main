@@ -1,0 +1,570 @@
+
+import os
+import datetime
+import pandas as pd
+import numpy as np
+from requests import get
+from numpy import log as ln
+
+###############################사용자 지정 부분################################
+
+# 지점정보 이용방식 결정 (원하는 방식의 코드를 활성화 해 주세요)
+#-- 지점정보 csv 파일 경로 지정 시
+#code_file_path = 'D:/Python/AgCast_fireblight/data_download/code_data/apple.csv'
+#st_code = pd.read_csv(code_file_path)
+
+#-- 지점정보 직접 입력 시( []안에 숫자를 쉼표로 구분하여 넣어주세요.)
+code = [258]
+st_code = pd.DataFrame({'code':code})
+
+# 시작날짜, 종료날짜 설정
+begin = '2024-10-01'
+until = '2025-12-31'
+
+# 기상자료 저장 위치 지정
+data_file_path = 'D:/Python/AgCast_fireblight/data_download/download/'
+## 해당 폴더로 기상자료가 저장됩니다.
+
+# 결과 파일 저장 위치 결정
+output_file_path = "D:/Python/AgCast_fireblight/test/"
+today = datetime.datetime.now().date().strftime('%Y.%m.%d')
+save_path = f'{output_file_path}/{today}'
+os.makedirs(save_path, exist_ok=True)
+## 해당 폴더 아래 오늘 날짜로 폴더가 생성된 후 파일이 저장됩니다.
+
+##############################################################################
+
+def download(url, file_name):
+    with open(file_name, "wb") as file:
+        response = get(url)
+        file.write(response.content)
+        
+time_scale = ['hourly','daily']
+
+#년도 구분
+startYear = int(begin[:4])
+endYear = int(until[:4])
+
+Year = [i for i in range(startYear, endYear, 1)]
+
+#년도별 구동
+for y in range(0, len(Year)):
+    this_year = Year[y]+1
+
+    bdate = str(this_year-1)+'-10-01'
+    edate = str(this_year)+'-06-30'
+    
+    #지점별 구동
+    for st in st_code['code']:
+        for time in time_scale:
+            #기상자료 다운
+            url = "https://fireblight.org/fireblight/getWeathers?begin="+bdate+"&until="+edate+"&interval="+time+"&st-code="+str(st)
+            #기상자료 저장
+            save_path_name = data_file_path+time+"_"+str(st)+".csv"
+
+            download(url, save_path_name)
+
+            if time == 'daily':
+                daily = pd.read_csv(save_path_name)
+            else:
+                hourly = pd.read_csv(save_path_name)
+
+        daily = daily.reset_index(drop = True)
+
+        hourly = hourly.reset_index(drop = True)
+
+        result = []
+        hourly['tm'] = pd.to_datetime(hourly['tm'])
+
+        hourly['Date'] = hourly['tm'].dt.tz_convert('UTC').dt.tz_localize(None)
+        hourly['Date'] = hourly['Date'].apply(lambda x: x.replace(hour=0, minute=0, second=0))
+
+        # DH 계산
+        result = []
+
+        for i in range(0, len(hourly['tm'])):
+            if hourly['ta'][i] >= 18.3:
+                dh = hourly['ta'][i] - 18.3
+            else:
+                dh = 0
+            result.append(dh)
+
+        hourly['T_hour-18.3'] = result
+
+        dh = (hourly.groupby('Date', as_index=False).sum(numeric_only=True)  # 숫자형 컬럼만 합산
+        )
+        daily['DH'] = dh['T_hour-18.3']
+
+        #str인 tm을 datetime으로 변경
+        daily['tm'] = pd.to_datetime(daily['tm'], format='%Y-%m-%d')
+
+        ####빠진 날짜의 기상자료 0으로 처리####
+        df = daily.set_index(daily['tm'], drop = False, append = False)
+        df = df.resample('D').first()
+        df = df.drop(['tm'],axis=1)
+        daily = df.reset_index(drop = False, inplace = False)
+        daily = daily.fillna(daily['st__code'].mean())
+        daily = daily.fillna(0)
+        ##########################배 생육단계 계산###############################
+        DVS = 0
+        result = []
+        noteDay = pd.Timestamp(hourly['date'][3000].year, 2, 15, 0, 0, 0)
+
+        # DVS1 계산
+        for i in range(0, len(hourly['date'])):
+            if i == 0:
+                DVR1 = 0
+            else:
+                if hourly['Temp'][i] > -6 and hourly['Temp'][i] < 12:
+                    DVR1 = -2.533 * 10 ** -4 + 1.671 * 10 ** -3 * np.exp(
+                        -0.5 * (ln((hourly['Temp'][i] + 273) / 275.2) / 0.01595) ** 2)
+                else:
+                    DVR1 = 0
+            DVS = DVS + DVR1
+            result.append(DVS)
+
+        hourly['DVS1'] = result
+
+        # DVS2 계산
+        DVS = 0
+        result = []
+
+        for i in range(0, len(hourly['date'])):
+            if hourly['date'][i] >= noteDay or hourly['DVS1'][i] >= 2:
+                if hourly['Temp'][i] < 5:
+                    DVR2 = 0
+                else:
+                    DVR2 = 4.646 * 10 ** -4 + (5.022 * 10 ** -3) / (
+                                1 + np.exp(-(hourly['Temp'][i] + 273 - 292.3) / 3.616))
+            else:
+                DVR2 = 0
+            DVS = DVS + DVR2
+            result.append(DVS)
+
+        hourly['DVS2'] = result
+
+        GT = hourly[hourly['DVS2'] >= 0.4078].iloc[0]['Date']
+        B1 = hourly[hourly['DVS2'] >= 0.6721].iloc[0]['Date']
+        FB = hourly[hourly['DVS2'] >= 0.8639].iloc[0]['Date']
+        PF = FB + datetime.timedelta(days=15)
+
+        # 배 생육단계 일별 표시
+        result = []
+        stage = 1
+        FBD = 0
+
+        for i in range(0, len(daily['tm'])):
+            if stage == 1 and daily['tm'][i] >= GT:
+                stage = 2
+            elif stage == 2 and daily['tm'][i] >= B1:
+                stage = 3
+            elif stage == 3 and daily['tm'][i] >= FB:
+                stage = 4
+            elif stage == 4 and FBD >= 15:
+                stage = 5
+            elif stage == 5 and FBD >= 21:
+                stage = 6
+            elif stage == 6 and FBD >= 96:
+                stage = 7
+            elif stage == 7 and FBD >= 201:
+                stage = 8
+            elif stage == 8 and FBD >= 211:
+                stage == 9
+            else:
+                stage = stage
+
+            if stage >= 4:
+                FBD += 1
+
+            result.append(stage)
+
+        result_growth = result
+
+        daily['Pear_growthstage'] = result
+        # ------------------------ 모델 결과 계산 ------------------------------#
+        ############################ EIP 계산 #################################
+        # ADD 계산을 위한 Tavg 생성
+
+        addavg = []
+
+        for i in range(0, len(daily['tm'])):
+            tavg = (min(daily['tx'][i], 32.2) + max(daily['tn'][i], 4.4)) / 2
+            addavg.append(tavg)
+
+        # Tavg-4.4 계산
+        result = []
+
+        for i in range(0, len(daily['tm'])):
+            if addavg[i] >= 4.4:
+                Dd = addavg[i] - 4.4
+            else:
+                Dd = 0
+            result.append(Dd)
+
+        daily['Tavg-4.4'] = result
+
+        # weight 계산
+        result = []
+
+        for i in range(0, len(daily['tm'])):
+            if daily['tm'][i] < B1 or daily['tm'][i] >= PF or daily['tn'][i] < 0 or (
+                    daily['tx'][i - 2] < 18.3 and daily['tx'][i - 1] < 18.3 and daily['tx'][i] < 18.3):
+                wnote = 0
+            elif daily['tx'][i - 1] < 18.3 and daily['tx'][i] < 18.3:
+                wnote = 1 / 2
+            elif daily['tx'][i] < 18.3:
+                wnote = 2 / 3
+            else:
+                wnote = 1
+            result.append(wnote)
+
+        daily['weight'] = result
+
+        # sday note
+        result = []
+
+        for i in range(0, len(daily['tm'])):
+            if daily['tm'][i] < B1 or daily['tm'][i] >= PF:
+                snote = 0
+            elif daily['tn'][i] < 0:
+                snote = 3
+            elif daily['weight'][i] == 0:
+                snote = 2
+            elif daily['tx'][i - 1] < 18.3:
+                snote = 1
+            else:
+                snote = 0
+            result.append(snote)
+
+        daily['snote'] = result
+
+        # ADD, ADH 계산
+        result = []
+        result1 = []
+        sday = B1
+
+        for i in range(0, len(daily['tm'])):
+            DH = 0
+            DD = 0
+            if daily['tm'][i] < B1 or daily['tm'][i] >= PF:
+                ADD = 0
+                ADH = 0
+                sday = sday
+            else:
+                if daily['snote'][i] == 0:
+                    sday = sday
+                elif daily['snote'][i] == 1 and ADH == 0:
+                    sday = daily['tm'][i]
+                elif daily['snote'][i] == 2:
+                    sday = daily['tm'][i]
+                    ADD = 0
+                    ADH = 0
+                elif daily['snote'][i] == 3:
+                    sday = daily['tm'][i] + datetime.timedelta(days=1)
+                    ADD = 0
+                    ADH = 0
+
+            while ADD >= 66.7:
+                ADD = ADD - daily[daily['tm'] == sday]['Tavg-4.4'].values[0]
+                sday = sday + datetime.timedelta(days=1)
+
+            a = daily.index[daily['tm'] == sday].tolist()
+            j = a[0]
+            for j in range(j, i + 1):
+                DH = (DH + daily['DH'][j]) * daily['weight'][j]
+                DD += daily['Tavg-4.4'][j]
+
+            ADH = DH
+            ADD = DD
+
+            result.append(ADD)
+            result1.append(ADH)
+
+        daily['ADD'] = result
+        daily['ADH'] = result1
+
+        result_gddacc = result
+        result_gdhacc = result1
+
+        ########################### 꽃감염위험도 계산 ##########################
+
+        date = daily[daily['tm'] >= GT]['tm'].tolist()
+        Model = pd.DataFrame({'Date': date})
+
+        # Date, 기온, 강수 자료 입력
+        result = []
+        result1 = []
+
+        for i in range(0, len(daily['tm'])):
+            if daily['tm'][i] >= date[0] and daily['tm'][i] <= date[-1]:
+                tavg = daily['ta'][i]
+                rain = daily['rn'][i]
+                result.append(tavg)
+                result1.append(rain)
+
+        Model['Tavg'] = result
+        Model['Rainfall'] = result1
+
+        # EIP %로 입력
+        result = []
+
+        for i in range(0, len(daily['tm'])):
+            if daily['tm'][i] >= date[0] and daily['tm'][i] <= date[-1]:
+                eip_value = daily['GDH'][i]*100/110
+                #modified equation
+                if eip_value == 0:
+                    eip = 0
+                else:
+                    eip = np.maximum((-0.0031*(eip_value**2)+1.6273*eip_value-1.7298),0)
+                result.append(eip)
+
+        Model['EIP'] = result
+
+        # 꽃감염위험도 계산
+        result = []
+        result1 = []
+        i_d_c = 0
+        E_d_c = 0
+        b, h, w, t = [], [], [], []
+        bir = []
+
+        for i in range(0, len(Model['Date'])):
+            if Model['Date'][i] >= B1 and Model['Date'][i] < PF:
+                B = "+"
+                b.append("TRUE")
+                if Model['EIP'][i] >= 100:
+                    H = "+"
+                    E_d_c += 1
+                    h.append("TRUE")
+                else:
+                    H = "-"
+                    h.append("FALSE")
+                if Model['RH'][i] >= 80 or Model['Rainfall'][i] >= 0.25 or Model['Rainfall'][i-1] >= 2.5:
+                    W = "+"
+                    w.append("TRUE")
+                else:
+                    W = "-"
+                    w.append("FALSE")
+                if Model['Tavg'][i] >= 15.6:
+                    T = "+"
+                    t.append("TRUE")
+                else:
+                    T = "-"
+                    t.append("FASLE")
+            else:
+                B = " "
+                b.append("FALSE")
+                H = " "
+                h.append("FALSE")
+                W = " "
+                w.append("FALSE")
+                T = " "
+                t.append("FALSE")
+            risk = B + H + W + T
+            if risk.count("+") == 1:
+                R = "L"
+                BIR = 25
+                bir.append(1)
+            elif risk.count("+") == 2:
+                R = "M"
+                BIR = 50
+                bir.append(2)
+            elif risk.count("+") == 3:
+                R = "H"
+                BIR = 75
+                bir.append(3)
+            elif risk.count("+") == 4:
+                R = "I"
+                BIR = 100
+                i_d_c += 1
+                bir.append(4)
+            elif Model['Date'][i] == PF:
+                R = " "
+                BIR = 0
+                bir.append(0)
+            else:
+                R = " "
+                BIR = " "
+                bir.append(0)
+            result.append(risk + R)
+            result1.append(BIR)
+
+        Model['BHWTR'] = result
+        Model['BIR'] = result1
+
+        #############################병징발현일 계산############################
+
+        Tavg = []
+
+        for i in range(0, len(daily['tm'])):
+            if daily['tm'][i] >= date[0] and daily['tm'][i] <= date[-1]:
+                tavg = (min(32.2, daily['tx'][i]) + max(12.7, daily['tn'][i])) / 2
+                Tavg.append(tavg)
+
+        # CMS, CBS 계산
+        symptom = 0
+        result = []
+
+        for i in range(0, len(Model['Date'])):
+            if Tavg[i] >= 12.7:
+                symptom = symptom + (Tavg[i] - 12.7)
+            else:
+                symptom = symptom
+            result.append(symptom)
+
+        Symptom = pd.DataFrame({'Date': date, 'CMS': result})
+        CMS = Symptom[Symptom['CMS'] >= 109].iloc[0]['Date']
+
+        symptom = 0
+        result = []
+
+        for i in range(0, len(Model['Date'])):
+            if Symptom['Date'][i] > CMS:
+                if Tavg[i] >= 12.7:
+                    symptom = symptom + (Tavg[i] - 12.7)
+            else:
+                symptom = symptom
+            result.append(symptom)
+
+        Symptom['CBS'] = result
+        CBS = Symptom[Symptom['CBS'] >= 57].iloc[0]['Date']
+
+        result = []
+        result1 = []
+
+        for i in range(0, len(Model['Date'])):
+            if Model['Date'][i] == CMS:
+                cms = "CMS"
+            elif Model['Date'][i] > CMS:
+                cms = "-"
+            else:
+                cms = Symptom['CMS'][i] * 100 / 109.0
+            if Model['Date'][i] == CBS:
+                cbs = "CBS"
+            elif Model['Date'][i] > CBS:
+                cbs = "-"
+            else:
+                cbs = Symptom['CBS'][i] * 100 / 57
+            result.append(cms)
+            result1.append(cbs)
+
+        Model['CMS'] = result
+        Model['CBS'] = result1
+
+        # BBS 계산
+        Infectiondate = Model[Model['BHWTR'] == "++++I"]['Date'].reset_index(drop=True)
+
+        a = 0
+        bbs = 0
+        result = []
+
+        for i in range(0, len(Model['Date'])):
+            bbs = 0
+            if a >= len(Infectiondate) or Model['Date'][i] <= Infectiondate[a]:
+                bbs = bbs
+            else:
+                p = Model.index[Model['Date'] == Infectiondate[a]].tolist()
+                j = p[0] + 1
+                for j in range(j, i + 1):
+                    if Tavg[j] >= 12.7:
+                        bbs = bbs + (Tavg[j] - 12.7)
+                    else:
+                        bbs = bbs
+                if bbs >= 57:
+                    a = a + 1
+            result.append(bbs)
+
+        Symptom['BBS'] = result
+        BBS = Symptom[Symptom['BBS'] >= 57]['Date']
+
+        result = []
+
+        for i in range(0, len(Symptom['Date'])):
+            if Symptom['BBS'][i] >= 57:
+                bs = "BBS"
+            elif Symptom['BBS'][i] == 0:
+                bs = "-"
+                result_bbs = " "
+            else:
+                bs = Symptom['BBS'][i] * 100 / 57
+            result.append(bs)
+
+        Model['BBS'] = result
+
+        result_df = pd.DataFrame({'tm': [], 'growth': [], 'ta': [], 'tx': [], 'tn': [],
+                                  'rn': [], 'hm': [], 'gddacc': [], 'gdhacc': [],
+                                  'bir': [], 'bbs': [], 'cms': [], 'cbs': [], 'sbs': [],
+                                  'B': [], 'H': [], 'W': [], 'T': []})
+
+        result_df['tm'] = daily['tm']
+        result_df['growth'] = result_growth
+        result_df['ta'] = daily['ta']
+        result_df['tx'] = daily['tx']
+        result_df['tn'] = daily['tn']
+        result_df['rn'] = daily['rn']
+        result_df['hm'] = daily['hm']
+        result_df['gddacc'] = result_gddacc
+        result_df['gdhacc'] = result_gdhacc
+
+        re_bir, re_b, re_h, re_w, re_t = [], [], [], [], []
+        j = 0
+
+        for i in range(0, len(result_df['tm'])):
+            if result_df['tm'][i] >= GT:
+                re_bir.append(bir[j])
+                re_b.append(b[j])
+                re_h.append(h[j])
+                re_w.append(w[j])
+                re_t.append(t[j])
+                j += 1
+            else:
+                re_bir.append(bir[0])
+                re_b.append("FALSE")
+                re_h.append("FALSE")
+                re_w.append("FALSE")
+                re_t.append("FALSE")
+
+        result_df['bir'] = re_bir
+        result_df['B'] = re_b
+        result_df['H'] = re_h
+        result_df['W'] = re_w
+        result_df['T'] = re_t
+
+        re_cms, re_cbs, re_bbs, re_sbs = [], [], [], []
+
+        GT, B1, FB, PF, CMS, CBS, list(BBS)
+
+        result_bbs = list(BBS)
+
+        for i in range(0, len(result_df['tm'])):
+            if result_df['tm'][i] == CMS:
+                re_cms.append(1)
+            else:
+                re_cms.append(" ")
+
+            if result_df['tm'][i] == CBS:
+                re_cbs.append(1)
+            else:
+                re_cbs.append(" ")
+
+            if len(result_bbs) == 0:
+                re_bbs.append(" ")
+            else:
+                for j in range(0, len(result_bbs)):
+                    t = 0
+                    if result_df['tm'][i] == result_bbs[j]:
+                        re_bbs.append(1)
+                        t += 1
+                        continue
+                if t == 0:
+                    re_bbs.append(" ")
+
+            re_sbs.append(" ")
+
+        result_df['bbs'] = re_bbs
+        result_df['cms'] = re_cms
+        result_df['cbs'] = re_cbs
+        result_df['sbs'] = re_sbs
+
+        result_df.to_csv(f'{save_path}/pear_{st}_{this_year}.csv')
+        print(f'{st}_{this_year}.csv 파일을 저장했습니다.')

@@ -1,0 +1,214 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; font-family: "DejaVu Sans", sans-serif; color: #222; }
+  #canvas { width: 1840px; padding: 18px 18px 16px; }
+  .row { display: flex; align-items: stretch; gap: 0; }
+  .card { border: 2px solid; border-radius: 14px; background: #fff; display: flex; flex-direction: column; }
+  .card h2 { margin: 0; padding: 10px 8px 2px; text-align: center; font-size: 21px; font-weight: 800; letter-spacing: .3px; }
+  .card h3 { margin: 0 0 8px; text-align: center; font-size: 16px; font-weight: 600; }
+  .sub { border: 1.5px solid; border-radius: 10px; margin: 6px 10px; padding: 8px 10px; }
+  .sub .t { text-align: center; font-weight: 700; font-size: 14.5px; margin-bottom: 6px; }
+  .eq { white-space: nowrap; font-family: "DejaVu Serif", serif; font-style: italic; font-size: 16px; text-align: center; margin: 6px 0; line-height: 1.5; }
+  .eq .n { font-style: normal; }
+  .eq.big { font-size: 22px; }
+  .frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 2px; }
+  .frac > span:first-child { border-bottom: 1.3px solid #222; padding: 0 3px; }
+  .frac > span { padding: 0 3px; }
+  .note { font-size: 12.5px; line-height: 1.5; }
+  .note td { padding: 0 4px; vertical-align: top; }
+  .note td:first-child { font-family: "DejaVu Serif", serif; font-style: italic; white-space: nowrap; }
+  .red { color: #c0392b; font-weight: 700; }
+  .range { font-family: "DejaVu Serif", serif; font-style: italic; text-align: center; font-size: 17px; margin: 8px 0 10px; }
+  .op { width: 34px; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 700; }
+  .arrow { width: 40px; display: flex; align-items: center; justify-content: center; }
+  .chart { display: flex; justify-content: center; margin-top: 4px; }
+  .input { width: 180px; border-color: #2e86de; }
+  .input h2 { background: #eaf3fd; color: #1b4f8a; border-radius: 12px 12px 0 0; padding-bottom: 10px; }
+  .input .grp { padding: 12px 12px; font-size: 14px; }
+  .input .grp b { color: #1f5fbf; font-size: 16px; display: block; margin-bottom: 10px; }
+  .input .it { display: flex; align-items: center; gap: 10px; margin: 13px 0; }
+  .ic { width: 26px; text-align: center; font-size: 20px; }
+  .modules { border: 2px dashed #5aa0e6; border-radius: 16px; padding: 10px 8px; display: flex; }
+  .m1 { width: 345px; border-color: #3a9a4a; } .m1 h2, .m1 h3 { color: #1f7a34; } .m1 .sub { border-color: #8fcf97; }
+  .m2 { width: 290px; border-color: #3d8fe0; } .m2 h2, .m2 h3 { color: #1f5fbf; } .m2 .sub { border-color: #9cc6f0; }
+  .m3 { width: 365px; border-color: #e67e22; } .m3 h2, .m3 h3 { color: #d35400; } .m3 .sub { border-color: #f3b77e; }
+  .m3 .sub .t { color: #d35400; }
+  .m4 { width: 262px; border-color: #7d4cc9; } .m4 h2, .m4 h3 { color: #5b2aa8; } .m4 .sub { border-color: #c2a6ec; }
+  .out { width: 158px; border-color: #e74c3c; }
+  .out h2 { background: #fdecea; color: #c0392b; border-radius: 12px 12px 0 0; padding-bottom: 10px; }
+  .m1 .sub .t { color: #1f7a34; } .m2 .sub .t { color: #1f5fbf; }
+  .bottom { display: flex; gap: 16px; margin-top: 16px; align-items: stretch; }
+  .params { flex: 1; border: 2px solid #2e86de; border-radius: 14px; padding: 10px 16px 12px; }
+  .params h2 { margin: 0 0 8px; font-size: 19px; color: #1b4f8a; text-align: center; }
+  .ptab { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .ptab th { text-align: left; color: #fff; padding: 4px 6px; font-size: 13px; }
+  .ptab td { padding: 3px 6px; border-bottom: 1px solid #e5e5e5; vertical-align: top; }
+  .ptab td.s { font-family: "DejaVu Serif", serif; font-style: italic; white-space: nowrap; }
+  .ptab td.v { white-space: nowrap; text-align: right; }
+  .cols { display: flex; gap: 14px; }
+  .cols > div { flex: 1; }
+  .legend { width: 300px; border: 1.5px dashed #999; border-radius: 10px; padding: 10px 14px; font-size: 13.5px; line-height: 1.65; }
+  .legend b { font-size: 15px; }
+  .removed { margin-top: 8px; padding-top: 6px; border-top: 1px solid #ddd; color: #666; font-size: 12.5px; line-height: 1.5; }
+</style></head>
+<body><div id="canvas">
+
+<div class="row">
+  <!-- INPUT -->
+  <div class="card input">
+    <h2>INPUT DATA</h2>
+    <div class="grp">
+      <b>Weather (daily)</b>
+      <div class="it"><span class="ic" style="color:#c0392b">&#127777;</span>Temperature (°C)</div>
+      <div class="it"><span class="ic" style="color:#2e86de">&#128167;</span>Relative Humidity (%)</div>
+      <div class="it"><span class="ic" style="color:#1f5fbf">&#9748;</span>Rainfall (mm)</div>
+      <div class="it"><span class="ic" style="color:#555">&#8776;</span>Wind Speed (m/s)</div>
+    </div>
+  </div>
+
+  <div class="arrow"><svg width="40" height="30"><path d="M2 15 H28" stroke="#1f6fd1" stroke-width="7"/><path d="M26 4 L39 15 L26 26 Z" fill="#1f6fd1"/></svg></div>
+
+  <div class="modules">
+    <!-- 1. MULTIPLICATION -->
+    <div class="card m1">
+      <h2>1. MULTIPLICATION</h2>
+      <h3>Bacterial population (N)</h3>
+      <div class="sub">
+        <div class="t">Discrete logistic growth</div>
+        <div class="eq">N<sub>s</sub> = N<sub>s&minus;1</sub> + r<sub>s</sub> N<sub>s&minus;1</sub>(<span class="n">1</span> &minus; N<sub>s&minus;1</sub>)</div>
+        <div class="note" style="text-align:center">start from <i>N</i><sub>0</sub>, apply <i>r</i><sub>t&minus;K</sub> &hellip; <i>r</i><sub>t</sub> &nbsp;&rarr;&nbsp; <i>N</i><sub>t</sub></div>
+        <div class="eq">r<sub>t</sub> = &mu;<sub>max</sub> &times; f<sub>T</sub>(T) &times; f<sub>RH</sub>(RH)</div>
+        <div class="eq" style="font-size:14px">f<sub>RH</sub>(RH) = <span class="frac"><span class="n">1</span><span><span class="n">1 + exp</span>[&minus;k<sub>M</sub>(RH &minus; RH<sub>th,M</sub>)]</span></span></div>
+        <table class="note">
+          <tr><td>f<sub>T</sub>(T)</td><td>: cardinal temperature function</td></tr>
+          <tr><td>RH<sub>th,M</sub></td><td>: RH threshold for growth (<span class="red">50%</span>)</td></tr>
+          <tr><td>k<sub>M</sub></td><td>: logistic slope (k<sub>M</sub> = 0.3)</td></tr>
+          <tr><td>K</td><td>: growth period (3 days)</td></tr>
+        </table>
+      </div>
+      <div class="chart"><svg width="250" height="150" viewBox="0 0 250 150"><g transform="translate(42,8)"><line x1="0" y1="112" x2="200" y2="112" stroke="#333" stroke-width="1.2"/><line x1="0" y1="0" x2="0" y2="112" stroke="#333" stroke-width="1.2"/><line x1="-4" y1="112.0" x2="0" y2="112.0" stroke="#333"/><text x="-7" y="116.0" font-size="11" text-anchor="end">0</text><line x1="-4" y1="61.1" x2="0" y2="61.1" stroke="#333"/><text x="-7" y="65.1" font-size="11" text-anchor="end">0.5</text><line x1="-4" y1="10.2" x2="0" y2="10.2" stroke="#333"/><text x="-7" y="14.2" font-size="11" text-anchor="end">1.0</text><polyline points="0.0,108.9 5.0,108.1 10.0,106.9 15.0,105.5 20.0,103.6 25.0,101.3 30.0,98.5 35.0,95.0 40.0,90.7 45.0,85.6 50.0,79.8 55.0,73.2 60.0,66.0 65.0,58.4 70.0,50.8 75.0,43.5 80.0,36.7 85.0,30.9 90.0,25.9 95.0,21.9 100.0,18.8 105.0,16.4 110.0,14.7 115.0,13.4 120.0,12.5 125.0,11.8 130.0,11.3 135.0,11.0 140.0,10.7 145.0,10.6 150.0,10.5 155.0,10.4 160.0,10.3 165.0,10.3 170.0,10.2 175.0,10.2 180.0,10.2 185.0,10.2 190.0,10.2 195.0,10.2 200.0,10.2" fill="none" stroke="#1f7a34" stroke-width="2.5" stroke-dasharray="" stroke-linejoin="round"/><text x="100.0" y="134" font-size="12" text-anchor="middle">Time (days)</text><text transform="translate(-33,56.0) rotate(-90)" font-size="12" text-anchor="middle">N</text></g></svg></div>
+      <div class="range">N &isin; [0, 1]</div>
+    </div>
+
+    <div class="op">&times;</div>
+
+    <!-- 2. DISPERSAL -->
+    <div class="card m2">
+      <h2>2. DISPERSAL</h2>
+      <h3>Dispersal potential (D)</h3>
+      <div class="sub">
+        <div class="t">Weather-driven dispersal</div>
+        <div class="eq">D<sub>weather</sub> = <span class="n">1 &minus; exp</span>(&minus;E<sub>total</sub>)</div>
+        <div class="note">where,</div>
+        <div class="eq" style="text-align:left;font-size:15px;padding-left:6px">E<sub>total</sub> = a<sub>rain</sub> &times; <span class="n">Rain</span><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ a<sub>wind</sub> &times; <span class="n">Wind</span><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ a<sub>int</sub> &times; (<span class="n">Rain &times; Wind</span>)</div>
+      </div>
+      <div class="sub">
+        <div class="t">Insect pathway (optional)</div>
+        <div class="eq">D<sub>insect</sub> = <span class="n">insect_coeff</span></div>
+        <div class="eq" style="font-size:14px">D = <span class="n">1</span> &minus; (<span class="n">1</span> &minus; D<sub>weather</sub>)(<span class="n">1</span> &minus; D<sub>insect</sub>)</div>
+      </div>
+      <div class="sub">
+        <div class="t">No aboveground dispersal</div>
+        <div class="note" style="text-align:center">if <b>use_dispersal = FALSE</b> &nbsp;&rarr;&nbsp; <i>D</i> = 1</div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="range">D &isin; [0, 1]</div>
+    </div>
+
+    <div class="op">&times;</div>
+
+    <!-- 3. INFECTION -->
+    <div class="card m3">
+      <h2>3. INFECTION</h2>
+      <h3>Infection conditions (I)</h3>
+      <div class="sub">
+        <div class="t">Humidity / rainfall (wetness) response</div>
+        <div class="note" style="margin-top:2px">&bull; if Rain &ge; Rain<sub>th</sub></div>
+        <div class="eq" style="margin:2px 0 6px">W(RH, Rain) = <span class="n">1</span></div>
+        <div class="note">&bull; if Rain &lt; Rain<sub>th</sub></div>
+        <div class="eq" style="margin:2px 0 8px;font-size:15px">W(RH, Rain) = <span class="frac"><span class="n">1</span><span><span class="n">1 + exp</span>[&minus;k<sub>I</sub>(RH &minus; RH<sub>th,I</sub>)]</span></span></div>
+        <table class="note">
+          <tr><td>Rain<sub>th</sub></td><td>: rainfall threshold (<span class="red">0.25 mm/day</span>)</td></tr>
+          <tr><td>RH<sub>th,I</sub></td><td>: RH threshold for infection (<span class="red">90%</span>)</td></tr>
+          <tr><td>k<sub>I</sub></td><td>: logistic slope (k<sub>I</sub> = 1)</td></tr>
+        </table>
+      </div>
+      <div class="chart"><svg width="250" height="160" viewBox="0 0 250 160"><g transform="translate(42,8)"><line x1="0" y1="122" x2="200" y2="122" stroke="#333" stroke-width="1.2"/><line x1="0" y1="0" x2="0" y2="122" stroke="#333" stroke-width="1.2"/><line x1="-4" y1="122.0" x2="0" y2="122.0" stroke="#333"/><text x="-7" y="126.0" font-size="11" text-anchor="end">0</text><line x1="-4" y1="66.5" x2="0" y2="66.5" stroke="#333"/><text x="-7" y="70.5" font-size="11" text-anchor="end">0.5</text><line x1="-4" y1="11.1" x2="0" y2="11.1" stroke="#333"/><text x="-7" y="15.1" font-size="11" text-anchor="end">1.0</text><polyline points="0.0,122.0 0.8,122.0 1.7,122.0 2.5,122.0 3.3,122.0 4.2,122.0 5.0,122.0 5.8,122.0 6.7,122.0 7.5,122.0 8.3,122.0 9.2,122.0 10.0,122.0 10.8,122.0 11.7,122.0 12.5,122.0 13.3,122.0 14.2,122.0 15.0,122.0 15.8,122.0 16.7,122.0 17.5,122.0 18.3,122.0 19.2,122.0 20.0,122.0 20.8,122.0 21.7,122.0 22.5,122.0 23.3,122.0 24.2,122.0 25.0,122.0 25.8,122.0 26.7,122.0 27.5,122.0 28.3,122.0 29.2,122.0 30.0,122.0 30.8,122.0 31.7,122.0 32.5,122.0 33.3,122.0 34.2,122.0 35.0,122.0 35.8,122.0 36.7,122.0 37.5,122.0 38.3,122.0 39.2,122.0 40.0,122.0 40.8,122.0 41.7,122.0 42.5,122.0 43.3,122.0 44.2,122.0 45.0,122.0 45.8,122.0 46.7,122.0 47.5,122.0 48.3,122.0 49.2,122.0 50.0,122.0 50.8,122.0 51.7,122.0 52.5,122.0 53.3,122.0 54.2,122.0 55.0,122.0 55.8,122.0 56.7,122.0 57.5,122.0 58.3,122.0 59.2,122.0 60.0,122.0 60.8,122.0 61.7,122.0 62.5,122.0 63.3,122.0 64.2,122.0 65.0,122.0 65.8,122.0 66.7,122.0 67.5,122.0 68.3,122.0 69.2,122.0 70.0,122.0 70.8,122.0 71.7,122.0 72.5,122.0 73.3,122.0 74.2,122.0 75.0,122.0 75.8,122.0 76.7,122.0 77.5,122.0 78.3,122.0 79.2,122.0 80.0,122.0 80.8,122.0 81.7,122.0 82.5,122.0 83.3,122.0 84.2,122.0 85.0,122.0 85.8,122.0 86.7,122.0 87.5,122.0 88.3,122.0 89.2,122.0 90.0,122.0 90.8,122.0 91.7,122.0 92.5,122.0 93.3,122.0 94.2,122.0 95.0,122.0 95.8,122.0 96.7,122.0 97.5,122.0 98.3,122.0 99.2,122.0 100.0,122.0 100.8,122.0 101.7,122.0 102.5,122.0 103.3,122.0 104.2,122.0 105.0,122.0 105.8,122.0 106.7,122.0 107.5,122.0 108.3,122.0 109.2,122.0 110.0,122.0 110.8,122.0 111.7,122.0 112.5,122.0 113.3,122.0 114.2,122.0 115.0,122.0 115.8,122.0 116.7,122.0 117.5,122.0 118.3,122.0 119.2,122.0 120.0,122.0 120.8,122.0 121.7,122.0 122.5,122.0 123.3,122.0 124.2,122.0 125.0,122.0 125.8,122.0 126.7,122.0 127.5,122.0 128.3,122.0 129.2,122.0 130.0,122.0 130.8,122.0 131.7,122.0 132.5,122.0 133.3,122.0 134.2,122.0 135.0,122.0 135.8,122.0 136.7,122.0 137.5,122.0 138.3,122.0 139.2,122.0 140.0,122.0 140.8,122.0 141.7,121.9 142.5,121.9 143.3,121.9 144.2,121.9 145.0,121.8 145.8,121.8 146.7,121.7 147.5,121.6 148.3,121.5 149.2,121.4 150.0,121.3 150.8,121.0 151.7,120.8 152.5,120.4 153.3,120.0 154.2,119.5 155.0,118.8 155.8,117.9 156.7,116.7 157.5,115.3 158.3,113.6 159.2,111.4 160.0,108.8 160.8,105.6 161.7,101.8 162.5,97.3 163.3,92.2 164.2,86.4 165.0,80.1 165.8,73.4 166.7,66.6 167.5,59.6 168.3,53.0 169.2,46.7 170.0,40.9 170.8,35.8 171.7,31.3 172.5,27.5 173.3,24.3 174.2,21.7 175.0,19.5 175.8,17.8 176.7,16.3 177.5,15.2 178.3,14.3 179.2,13.6 180.0,13.1 180.8,12.7 181.7,12.3 182.5,12.0 183.3,11.8 184.2,11.7 185.0,11.5 185.8,11.4 186.7,11.4 187.5,11.3 188.3,11.3 189.2,11.2 190.0,11.2 190.8,11.2 191.7,11.2 192.5,11.1 193.3,11.1 194.2,11.1 195.0,11.1 195.8,11.1 196.7,11.1 197.5,11.1 198.3,11.1 199.2,11.1 200.0,11.1" fill="none" stroke="#1f5fbf" stroke-width="2.5" stroke-dasharray="" stroke-linejoin="round"/><polyline points="0.0,11.1 200.0,11.1" fill="none" stroke="#e67e22" stroke-width="2" stroke-dasharray="6 4" stroke-linejoin="round"/><line x1="0.0" y1="122" x2="0.0" y2="126" stroke="#333"/><text x="0.0" y="136" font-size="10" text-anchor="middle">40</text><line x1="66.7" y1="122" x2="66.7" y2="126" stroke="#333"/><text x="66.7" y="136" font-size="10" text-anchor="middle">60</text><line x1="133.3" y1="122" x2="133.3" y2="126" stroke="#333"/><text x="133.3" y="136" font-size="10" text-anchor="middle">80</text><line x1="200.0" y1="122" x2="200.0" y2="126" stroke="#333"/><text x="200.0" y="136" font-size="10" text-anchor="middle">100</text><line x1="166.7" y1="10" x2="166.7" y2="122" stroke="#c0392b" stroke-dasharray="4 3"/><text x="160.7" y="30" font-size="11" fill="#c0392b" text-anchor="end">RH<tspan font-size="8" dy="2">th,I</tspan><tspan dy="-2"> = 90</tspan></text><text x="100.0" y="149" font-size="12" text-anchor="middle">RH (%)</text><text transform="translate(-33,61.0) rotate(-90)" font-size="12" text-anchor="middle">W</text></g></svg></div>
+      <div class="note" style="text-align:center;margin-top:-2px"><span style="color:#1f5fbf">&#9473;</span> Rain &lt; Rain<sub>th</sub> &nbsp;&nbsp; <span style="color:#e67e22">&#9476;</span> Rain &ge; Rain<sub>th</sub></div>
+      <div class="eq big" style="margin-top:10px">I = W(RH, Rain)</div>
+      <div style="flex:1"></div>
+      <div class="range">I &isin; [0, 1]</div>
+    </div>
+  </div>
+
+  <div class="arrow"><svg width="40" height="30"><path d="M2 15 H28" stroke="#1f6fd1" stroke-width="7"/><path d="M26 4 L39 15 L26 26 Z" fill="#1f6fd1"/></svg></div>
+
+  <!-- 4. RISK -->
+  <div class="card m4">
+    <h2>4. RISK</h2>
+    <h3>Daily infection risk (Risk)</h3>
+    <div class="sub" style="padding:18px 10px">
+      <div class="eq big">Risk = N &times; D &times; I</div>
+      <div class="note" style="text-align:center;margin-top:10px">if use_dispersal = FALSE<br>(D = 1) &rarr; <i>Risk</i> = <i>N</i> &times; <i>I</i></div>
+    </div>
+    <div class="chart"><svg width="250" height="150" viewBox="0 0 250 150"><g transform="translate(42,8)"><line x1="0" y1="112" x2="200" y2="112" stroke="#333" stroke-width="1.2"/><line x1="0" y1="0" x2="0" y2="112" stroke="#333" stroke-width="1.2"/><line x1="-4" y1="112.0" x2="0" y2="112.0" stroke="#333"/><text x="-7" y="116.0" font-size="11" text-anchor="end">0</text><line x1="-4" y1="56.0" x2="0" y2="56.0" stroke="#333"/><text x="-7" y="60.0" font-size="11" text-anchor="end">0.2</text><line x1="-4" y1="0.0" x2="0" y2="0.0" stroke="#333"/><text x="-7" y="4.0" font-size="11" text-anchor="end">0.4</text><polyline points="0.0,110.2 1.7,112.0 3.3,101.9 5.0,108.7 6.6,111.9 8.3,110.3 9.9,112.0 11.6,97.8 13.2,106.1 14.9,105.0 16.5,107.0 18.2,70.4 19.8,76.7 21.5,112.0 23.1,112.0 24.8,106.4 26.4,99.8 28.1,101.3 29.8,104.6 31.4,111.9 33.1,111.4 34.7,97.5 36.4,97.8 38.0,100.8 39.7,103.3 41.3,103.7 43.0,103.8 44.6,103.6 46.3,103.2 47.9,95.7 49.6,74.5 51.2,50.8 52.9,111.9 54.5,104.6 56.2,105.9 57.9,105.9 59.5,103.1 61.2,108.4 62.8,108.8 64.5,102.9 66.1,106.3 67.8,112.0 69.4,103.8 71.1,100.0 72.7,111.9 74.4,100.6 76.0,112.0 77.7,76.0 79.3,99.0 81.0,102.3 82.6,102.0 84.3,101.6 86.0,98.9 87.6,96.7 89.3,98.2 90.9,101.7 92.6,111.9 94.2,95.1 95.9,40.2 97.5,100.7 99.2,100.5 100.8,106.1 102.5,31.5 104.1,108.9 105.8,105.7 107.4,98.4 109.1,103.2 110.7,112.0 112.4,28.6 114.0,82.2 115.7,39.1 117.4,51.6 119.0,104.6 120.7,105.8 122.3,72.7 124.0,112.0 125.6,112.0 127.3,112.0 128.9,112.0 130.6,112.0 132.2,105.8 133.9,24.1 135.5,111.8 137.2,45.5 138.8,111.6 140.5,110.6 142.1,79.8 143.8,76.2 145.5,50.8 147.1,76.1 148.8,73.3 150.4,100.4 152.1,39.8 153.7,112.0 155.4,63.8 157.0,68.0 158.7,20.2 160.3,90.8 162.0,111.9 163.6,72.2 165.3,111.9 166.9,59.1 168.6,89.0 170.2,62.9 171.9,91.4 173.6,52.1 175.2,30.1 176.9,63.7 178.5,33.8 180.2,97.3 181.8,69.1 183.5,71.3 185.1,112.0 186.8,14.6 188.4,111.9 190.1,108.0 191.7,68.5 193.4,66.6 195.0,74.7 196.7,23.7 198.3,87.2 200.0,25.7" fill="none" stroke="#6a2fc8" stroke-width="1.6" stroke-dasharray="" stroke-linejoin="round"/><text x="100.0" y="134" font-size="12" text-anchor="middle">Mar → Jun 2019</text><text transform="translate(-33,56.0) rotate(-90)" font-size="12" text-anchor="middle">Risk</text></g></svg></div>
+    <div class="note" style="text-align:center;color:#555">Example: fire blight, ID101 (2019)</div>
+    <div style="flex:1"></div>
+    <div class="range">Risk &isin; [0, 1]</div>
+  </div>
+
+  <div class="arrow"><svg width="40" height="30"><path d="M2 15 H28" stroke="#1f6fd1" stroke-width="7"/><path d="M26 4 L39 15 L26 26 Z" fill="#1f6fd1"/></svg></div>
+
+  <!-- OUTPUT -->
+  <div class="card out">
+    <h2>OUTPUT</h2>
+    <div style="padding:14px 14px;font-size:15px;line-height:1.9">
+      <b style="color:#c0392b;font-size:16px">Daily indices</b><br>
+      &bull; Daily Risk<br>
+      &bull; N (population)<br>
+      &bull; D (dispersal)<br>
+      &bull; I (infection)
+    </div>
+  </div>
+</div>
+
+<div class="bottom">
+  <div class="params">
+    <h2>PARAMETERS (example values: fire blight)</h2>
+    <div class="cols">
+      <div><table class="ptab">
+        <tr><th colspan="3" style="background:#1f7a34">Multiplication (N)</th></tr>
+        <tr><td class="s">N<sub>0</sub></td><td>Initial inoculum pressure</td><td class="v">0.15</td></tr>
+        <tr><td class="s">&mu;<sub>max</sub></td><td>Maximum growth rate</td><td class="v">0.30</td></tr>
+        <tr><td class="s">T<sub>min</sub>, T<sub>opt</sub>, T<sub>max</sub></td><td>Cardinal temperatures (°C)</td><td class="v">4, 28, 36</td></tr>
+        <tr><td class="s">RH<sub>th,M</sub></td><td>RH threshold for growth (%)</td><td class="v">50</td></tr>
+        <tr><td class="s">K</td><td>Growth period (days, global)</td><td class="v">3</td></tr>
+      </table></div>
+      <div><table class="ptab">
+        <tr><th colspan="3" style="background:#1f5fbf">Dispersal (D)</th></tr>
+        <tr><td class="s">a<sub>rain</sub></td><td>Rain coefficient</td><td class="v">0.055</td></tr>
+        <tr><td class="s">a<sub>wind</sub></td><td>Wind coefficient</td><td class="v">0.030</td></tr>
+        <tr><td class="s">a<sub>int</sub></td><td>Rain &times; wind coefficient</td><td class="v">0.003</td></tr>
+        <tr><td class="s">insect_coeff</td><td>Insect dispersal probability</td><td class="v">0.10</td></tr>
+        <tr><td class="s">use_*</td><td>Pathway switches (rain, wind, interaction, insect, dispersal)</td><td class="v">on/off</td></tr>
+      </table></div>
+      <div><table class="ptab">
+        <tr><th colspan="3" style="background:#d35400">Infection (I)</th></tr>
+        <tr><td class="s">RH<sub>th,I</sub></td><td>RH threshold for infection (%)</td><td class="v">90</td></tr>
+        <tr><td class="s">Rain<sub>th</sub></td><td>Rainfall threshold (mm/day)</td><td class="v">0.25</td></tr>
+      </table></div>
+    </div>
+  </div>
+  <div class="legend">
+    <b>Legend</b><br>
+    N &nbsp;&nbsp;&nbsp;: Bacterial population (0&ndash;1)<br>
+    D &nbsp;&nbsp;&nbsp;: Dispersal potential (0&ndash;1)<br>
+    I &nbsp;&nbsp;&nbsp;&nbsp;: Infection conditions (0&ndash;1)<br>
+    Risk : Daily infection risk (0&ndash;1)
+    <div class="removed">Removed in v8: spray decision (3-day avg., risk threshold), host vulnerable period (V), temperature term in I, mortality (&delta;N)</div>
+  </div>
+</div>
+
+</div></body></html>
