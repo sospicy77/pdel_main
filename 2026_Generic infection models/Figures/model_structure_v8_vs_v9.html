@@ -1,0 +1,215 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; font-family: "DejaVu Sans", sans-serif; color: #222; }
+  #canvas { width: 1900px; padding: 16px 18px 14px; }
+  .grid { display: grid; grid-template-columns: 46px 170px 378px 312px 432px 258px 150px;
+          column-gap: 10px; row-gap: 12px; align-items: stretch; }
+  .hdr { border-radius: 12px; padding: 8px 6px 6px; text-align: center; }
+  .hdr h2 { margin: 0; font-size: 22px; font-weight: 800; }
+  .hdr h3 { margin: 2px 0 0; font-size: 15px; font-weight: 600; }
+  .rowlab { writing-mode: vertical-rl; transform: rotate(180deg); border-radius: 10px; color: #fff;
+            font-weight: 800; font-size: 19px; display: flex; align-items: center; justify-content: center;
+            letter-spacing: .5px; }
+  .rowlab small { font-weight: 500; font-size: 13px; margin-top: 8px; }
+  .card { height: 100%; border: 2px solid; border-radius: 12px; padding: 8px 9px; background: #fff; display: flex;
+          flex-direction: column; gap: 6px; }
+  .blk { border-radius: 9px; padding: 6px 8px 7px; position: relative; }
+  .base { border: 1.5px solid #c9c9c9; background: #fafafa; }
+  .addon { border: 2px dashed #e7298a; background: #fff3f8; }
+  .tag { position: absolute; top: -9px; right: 8px; font-size: 10.5px; font-weight: 800; color: #fff;
+         border-radius: 6px; padding: 1px 6px; letter-spacing: .4px; }
+  .tag.b { background: #8a8a8a; }
+  .tag.a { background: #e7298a; }
+  .t { font-weight: 700; font-size: 13.5px; margin-bottom: 3px; }
+  .eq { font-family: "DejaVu Serif", serif; font-style: italic; font-size: 15px; text-align: center;
+        margin: 3px 0; line-height: 1.45; white-space: nowrap; }
+  .eq .n { font-style: normal; }
+  .eq.big { font-size: 21px; }
+  .frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 2px; }
+  .frac > span:first-child { border-bottom: 1.2px solid #222; padding: 0 3px; }
+  .frac > span { padding: 0 3px; }
+  .note { font-size: 12px; line-height: 1.45; color: #333; }
+  .note b { color: #000; }
+  .val { color: #c0392b; font-weight: 700; }
+  .chart { display: flex; justify-content: center; }
+  .in-item { display: flex; align-items: center; gap: 8px; font-size: 13.5px; margin: 7px 0; }
+  .ic { width: 22px; text-align: center; font-size: 18px; }
+  .muted { color: #9a9a9a; }
+  .new { color: #e7298a; font-weight: 700; }
+  .N .card, .N.hdr { border-color: #3a9a4a; } .N.hdr { background: #edf7ee; color: #1f7a34; }
+  .D .card, .D.hdr { border-color: #3d8fe0; } .D.hdr { background: #eaf3fd; color: #1f5fbf; }
+  .I .card, .I.hdr { border-color: #e67e22; } .I.hdr { background: #fdf2e7; color: #d35400; }
+  .R .card, .R.hdr { border-color: #7d4cc9; } .R.hdr { background: #f3edfb; color: #5b2aa8; }
+  .IN .card, .IN.hdr { border-color: #2e86de; } .IN.hdr { background: #eaf3fd; color: #1b4f8a; }
+  .O .card, .O.hdr { border-color: #e74c3c; } .O.hdr { background: #fdecea; color: #c0392b; }
+  .N .t { color: #1f7a34; } .D .t { color: #1f5fbf; } .I .t { color: #d35400; } .R .t { color: #5b2aa8; }
+  .addon .t { color: #b5186a; }
+  .perf { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .perf td, .perf th { padding: 2px 4px; text-align: center; }
+  .perf th { font-weight: 700; border-bottom: 1px solid #ccc; }
+  .foot { display: flex; gap: 26px; align-items: center; margin-top: 12px; font-size: 13px; color: #333; }
+  .sw { display: inline-block; width: 30px; height: 16px; border-radius: 4px; vertical-align: middle; margin-right: 6px; }
+</style></head>
+<body><div id="canvas">
+<div class="grid">
+
+  <!-- header row -->
+  <div></div>
+  <div class="hdr IN"><h2>INPUT</h2><h3>Weather (daily)</h3></div>
+  <div class="hdr N"><h2>1. MULTIPLICATION</h2><h3>Bacterial population (N)</h3></div>
+  <div class="hdr D"><h2>2. DISPERSAL</h2><h3>Dispersal potential (D)</h3></div>
+  <div class="hdr I"><h2>3. INFECTION</h2><h3>Infection conditions (I)</h3></div>
+  <div class="hdr R"><h2>4. RISK</h2><h3>Daily infection risk</h3></div>
+  <div class="hdr O"><h2>OUTPUT</h2><h3>Daily indices</h3></div>
+
+  <!-- ================= v8 ================= -->
+  <div class="rowlab" style="background:#54278f">v8 &nbsp;·&nbsp; base modules <small>(all bacterial diseases)</small></div>
+
+  <div class="IN"><div class="card">
+    <div class="in-item"><span class="ic" style="color:#c0392b">&#127777;</span>Temperature (°C)</div>
+    <div class="in-item"><span class="ic" style="color:#2e86de">&#128167;</span>Relative humidity (%)</div>
+    <div class="in-item"><span class="ic" style="color:#1f5fbf">&#9748;</span>Rainfall (mm)</div>
+  </div></div>
+
+  <div class="N"><div class="card">
+    <div class="blk base"><span class="tag b">BASE</span>
+      <div class="t">Discrete logistic growth</div>
+      <div class="eq">N<sub>s</sub> = N<sub>s&minus;1</sub> + r<sub>s</sub> N<sub>s&minus;1</sub>(<span class="n">1</span> &minus; N<sub>s&minus;1</sub>)</div>
+      <div class="eq">r<sub>s</sub> = &mu;<sub>max</sub> &times; f<sub>T</sub>(T<sub>s</sub>) &times; f<sub>RH</sub>(RH<sub>s</sub>)</div>
+      <div class="eq" style="font-size:13.5px">f<sub>RH</sub>(RH) = <span class="frac"><span class="n">1</span><span><span class="n">1 + exp</span>[&minus;k<sub>M</sub>(RH &minus; RH<sub>th,M</sub>)]</span></span></div>
+      <div class="note">f<sub>T</sub>: cardinal temperature of <b>daily mean T</b> &nbsp;·&nbsp; growth period K = <b>3 d</b></div>
+    </div>
+    <div class="chart"><svg width="250" height="140" viewBox="0 0 250 140"><g transform="translate(40,10)"><line x1="0" y1="100" x2="202" y2="100" stroke="#333" stroke-width="1.2"/><line x1="0" y1="0" x2="0" y2="100" stroke="#333" stroke-width="1.2"/><line x1="-4" y1="100.0" x2="0" y2="100.0" stroke="#333"/><text x="-7" y="104.0" font-size="11" text-anchor="end">0</text><line x1="-4" y1="54.5" x2="0" y2="54.5" stroke="#333"/><text x="-7" y="58.5" font-size="11" text-anchor="end">0.5</text><line x1="-4" y1="9.1" x2="0" y2="9.1" stroke="#333"/><text x="-7" y="13.1" font-size="11" text-anchor="end">1.0</text><line x1="0.0" y1="100" x2="0.0" y2="104" stroke="#333"/><text x="0.0" y="115" font-size="10.5" text-anchor="middle">0</text><line x1="101.0" y1="100" x2="101.0" y2="104" stroke="#333"/><text x="101.0" y="115" font-size="10.5" text-anchor="middle">20</text><line x1="202.0" y1="100" x2="202.0" y2="104" stroke="#333"/><text x="202.0" y="115" font-size="10.5" text-anchor="middle">40</text><polyline points="0.0,97.3 5.1,96.5 10.1,95.5 15.1,94.2 20.2,92.5 25.2,90.5 30.3,87.9 35.3,84.8 40.4,81.0 45.5,76.5 50.5,71.2 55.6,65.3 60.6,58.9 65.7,52.1 70.7,45.3 75.8,38.8 80.8,32.8 85.8,27.5 90.9,23.1 95.9,19.6 101.0,16.8 106.1,14.7 111.1,13.1 116.1,12.0 121.2,11.1 126.2,10.5 131.3,10.1 136.4,9.8 141.4,9.6 146.4,9.4 151.5,9.3 156.6,9.3 161.6,9.2 166.6,9.2 171.7,9.2 176.8,9.1 181.8,9.1 186.9,9.1 191.9,9.1 196.9,9.1 202.0,9.1" fill="none" stroke="#1f7a34" stroke-width="2.5" stroke-dasharray="" stroke-linejoin="round"/><text x="101.0" y="127" font-size="11.5" text-anchor="middle">Time (days)</text><text transform="translate(-30,50.0) rotate(-90)" font-size="11.5" text-anchor="middle">N</text></g></svg></div>
+  </div></div>
+
+  <div class="D"><div class="card">
+    <div class="blk base"><span class="tag b">BASE</span>
+      <div class="t">Dispersal coefficient</div>
+      <div class="eq big">D = K<sub>d</sub></div>
+      <div class="note" style="text-align:center">constant, 0&ndash;1 (fittable)<br>no weather effect</div>
+    </div>
+    <div class="chart"><svg width="230" height="140" viewBox="0 0 230 140"><g transform="translate(40,10)"><line x1="0" y1="100" x2="182" y2="100" stroke="#333" stroke-width="1.2"/><line x1="0" y1="0" x2="0" y2="100" stroke="#333" stroke-width="1.2"/><line x1="-4" y1="100.0" x2="0" y2="100.0" stroke="#333"/><text x="-7" y="104.0" font-size="11" text-anchor="end">0</text><line x1="-4" y1="54.5" x2="0" y2="54.5" stroke="#333"/><text x="-7" y="58.5" font-size="11" text-anchor="end">0.5</text><line x1="-4" y1="9.1" x2="0" y2="9.1" stroke="#333"/><text x="-7" y="13.1" font-size="11" text-anchor="end">1.0</text><line x1="0.0" y1="100" x2="0.0" y2="104" stroke="#333"/><text x="0.0" y="115" font-size="10.5" text-anchor="middle">0</text><line x1="91.0" y1="100" x2="91.0" y2="104" stroke="#333"/><text x="91.0" y="115" font-size="10.5" text-anchor="middle">20</text><line x1="182.0" y1="100" x2="182.0" y2="104" stroke="#333"/><text x="182.0" y="115" font-size="10.5" text-anchor="middle">40</text><polyline points="0.0,81.8 182.0,81.8" fill="none" stroke="#1f5fbf" stroke-width="2.5" stroke-dasharray="" stroke-linejoin="round"/><text x="182" y="20" font-size="11" fill="#1f5fbf" text-anchor="end">K_d = 0.20</text><text x="91.0" y="127" font-size="11.5" text-anchor="middle">Rain (mm)</text><text transform="translate(-30,50.0) rotate(-90)" font-size="11.5" text-anchor="middle">D</text></g></svg></div>
+  </div></div>
+
+  <div class="I"><div class="card">
+    <div class="blk base"><span class="tag b">BASE</span>
+      <div class="t">Wetness (RH, Rain) response</div>
+      <div class="note">&bull; if Rain &ge; Rain<sub>th</sub> :&nbsp; <i>W</i> = 1</div>
+      <div class="note">&bull; if Rain &lt; Rain<sub>th</sub> :</div>
+      <div class="eq" style="font-size:14px">W(RH, Rain) = <span class="frac"><span class="n">1</span><span><span class="n">1 + exp</span>[&minus;k<sub>I</sub>(RH &minus; RH<sub>th,I</sub>)]</span></span></div>
+    </div>
+    <div class="chart"><svg width="250" height="140" viewBox="0 0 250 140"><g transform="translate(40,10)"><line x1="0" y1="100" x2="202" y2="100" stroke="#333" stroke-width="1.2"/><line x1="0" y1="0" x2="0" y2="100" stroke="#333" stroke-width="1.2"/><line x1="-4" y1="100.0" x2="0" y2="100.0" stroke="#333"/><text x="-7" y="104.0" font-size="11" text-anchor="end">0</text><line x1="-4" y1="54.5" x2="0" y2="54.5" stroke="#333"/><text x="-7" y="58.5" font-size="11" text-anchor="end">0.5</text><line x1="-4" y1="9.1" x2="0" y2="9.1" stroke="#333"/><text x="-7" y="13.1" font-size="11" text-anchor="end">1.0</text><line x1="0.0" y1="100" x2="0.0" y2="104" stroke="#333"/><text x="0.0" y="115" font-size="10.5" text-anchor="middle">20</text><line x1="101.0" y1="100" x2="101.0" y2="104" stroke="#333"/><text x="101.0" y="115" font-size="10.5" text-anchor="middle">60</text><line x1="202.0" y1="100" x2="202.0" y2="104" stroke="#333"/><text x="202.0" y="115" font-size="10.5" text-anchor="middle">100</text><polyline points="0.0,100.0 1.0,100.0 2.0,100.0 3.0,100.0 4.1,100.0 5.1,100.0 6.1,100.0 7.1,100.0 8.1,100.0 9.1,100.0 10.2,100.0 11.2,100.0 12.2,100.0 13.2,100.0 14.2,100.0 15.2,100.0 16.2,100.0 17.3,100.0 18.3,100.0 19.3,100.0 20.3,100.0 21.3,100.0 22.3,100.0 23.3,100.0 24.4,100.0 25.4,100.0 26.4,100.0 27.4,100.0 28.4,100.0 29.4,100.0 30.5,100.0 31.5,100.0 32.5,100.0 33.5,100.0 34.5,100.0 35.5,100.0 36.5,100.0 37.6,100.0 38.6,100.0 39.6,100.0 40.6,100.0 41.6,100.0 42.6,100.0 43.6,100.0 44.7,100.0 45.7,100.0 46.7,100.0 47.7,100.0 48.7,100.0 49.7,100.0 50.8,100.0 51.8,100.0 52.8,100.0 53.8,100.0 54.8,100.0 55.8,100.0 56.8,100.0 57.9,100.0 58.9,100.0 59.9,100.0 60.9,100.0 61.9,100.0 62.9,100.0 63.9,100.0 65.0,100.0 66.0,100.0 67.0,100.0 68.0,100.0 69.0,100.0 70.0,100.0 71.1,100.0 72.1,100.0 73.1,100.0 74.1,100.0 75.1,100.0 76.1,100.0 77.1,100.0 78.2,100.0 79.2,100.0 80.2,100.0 81.2,100.0 82.2,100.0 83.2,100.0 84.3,100.0 85.3,100.0 86.3,100.0 87.3,100.0 88.3,100.0 89.3,100.0 90.3,100.0 91.4,100.0 92.4,100.0 93.4,100.0 94.4,100.0 95.4,100.0 96.4,100.0 97.4,100.0 98.5,100.0 99.5,100.0 100.5,100.0 101.5,100.0 102.5,100.0 103.5,100.0 104.6,100.0 105.6,100.0 106.6,100.0 107.6,100.0 108.6,100.0 109.6,100.0 110.6,100.0 111.7,100.0 112.7,100.0 113.7,100.0 114.7,100.0 115.7,100.0 116.7,100.0 117.7,100.0 118.8,100.0 119.8,100.0 120.8,100.0 121.8,100.0 122.8,100.0 123.8,100.0 124.9,100.0 125.9,100.0 126.9,100.0 127.9,100.0 128.9,100.0 129.9,100.0 130.9,100.0 132.0,100.0 133.0,100.0 134.0,100.0 135.0,100.0 136.0,100.0 137.0,100.0 138.1,100.0 139.1,100.0 140.1,100.0 141.1,100.0 142.1,100.0 143.1,100.0 144.1,100.0 145.2,100.0 146.2,100.0 147.2,100.0 148.2,100.0 149.2,100.0 150.2,100.0 151.2,100.0 152.3,100.0 153.3,100.0 154.3,100.0 155.3,100.0 156.3,100.0 157.3,100.0 158.4,99.9 159.4,99.9 160.4,99.9 161.4,99.8 162.4,99.7 163.4,99.5 164.4,99.3 165.5,99.0 166.5,98.5 167.5,97.7 168.5,96.7 169.5,95.1 170.5,92.9 171.5,89.7 172.6,85.5 173.6,79.9 174.6,72.9 175.6,64.7 176.6,55.7 177.6,46.6 178.7,38.2 179.7,30.9 180.7,24.9 181.7,20.3 182.7,16.9 183.7,14.5 184.7,12.8 185.8,11.6 186.8,10.8 187.8,10.2 188.8,9.9 189.8,9.6 190.8,9.4 191.8,9.3 192.9,9.2 193.9,9.2 194.9,9.2 195.9,9.1 196.9,9.1 197.9,9.1 199.0,9.1 200.0,9.1 201.0,9.1 202.0,9.1" fill="none" stroke="#d35400" stroke-width="2.5" stroke-dasharray="" stroke-linejoin="round"/><polyline points="0.0,9.1 202.0,9.1" fill="none" stroke="#e67e22" stroke-width="1.6" stroke-dasharray="5 4" stroke-linejoin="round"/><text x="0" y="22" dx="6" font-size="10.5" fill="#c0392b">RH_th,I = 90, k_I = 1</text><text x="101.0" y="127" font-size="11.5" text-anchor="middle">RH (%)</text><text transform="translate(-30,50.0) rotate(-90)" font-size="11.5" text-anchor="middle">W</text></g></svg></div>
+    <div class="eq big">I = W(RH, Rain)</div>
+  </div></div>
+
+  <div class="R"><div class="card">
+    <div class="eq big" style="margin-top:6px">Risk = N &times; D &times; I</div>
+    <div class="note" style="text-align:center">Risk &isin; [0, 1]</div>
+    <div class="chart"><svg width="250" height="150" viewBox="0 0 250 150"><g transform="translate(40,10)"><rect x="1.5" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="11.6" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="21.7" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="31.8" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="41.9" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="52.0" y="76.7" width="7.1" height="33.3" fill="#fdd0a2"/><rect x="62.1" y="76.7" width="7.1" height="33.3" fill="#fdd0a2"/><rect x="72.2" y="76.7" width="7.1" height="33.3" fill="#fdd0a2"/><rect x="82.3" y="76.7" width="7.1" height="33.3" fill="#fdd0a2"/><rect x="92.4" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="102.5" y="43.3" width="7.1" height="66.7" fill="#fdd0a2"/><rect x="112.6" y="43.3" width="7.1" height="66.7" fill="#fdd0a2"/><rect x="122.7" y="10.0" width="7.1" height="100.0" fill="#fdd0a2"/><rect x="132.8" y="43.3" width="7.1" height="66.7" fill="#fdd0a2"/><rect x="142.9" y="43.3" width="7.1" height="66.7" fill="#fdd0a2"/><rect x="153.0" y="10.0" width="7.1" height="100.0" fill="#fdd0a2"/><rect x="163.1" y="10.0" width="7.1" height="100.0" fill="#fdd0a2"/><rect x="173.2" y="76.7" width="7.1" height="33.3" fill="#fdd0a2"/><rect x="183.3" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="193.4" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><line x1="0" y1="110" x2="202" y2="110" stroke="#333" stroke-width="1.2"/><line x1="0" y1="0" x2="0" y2="110" stroke="#333" stroke-width="1.2"/><line x1="-4" y1="110.0" x2="0" y2="110.0" stroke="#333"/><text x="-7" y="114.0" font-size="11" text-anchor="end">0</text><line x1="-4" y1="60.0" x2="0" y2="60.0" stroke="#333"/><text x="-7" y="64.0" font-size="11" text-anchor="end">0.5</text><line x1="-4" y1="10.0" x2="0" y2="10.0" stroke="#333"/><text x="-7" y="14.0" font-size="11" text-anchor="end">1.0</text><line x1="5.1" y1="110" x2="5.1" y2="114" stroke="#333"/><text x="5.1" y="125" font-size="10.5" text-anchor="middle">04-07</text><line x1="106.1" y1="110" x2="106.1" y2="114" stroke="#333"/><text x="106.1" y="125" font-size="10.5" text-anchor="middle">04-17</text><line x1="196.9" y1="110" x2="196.9" y2="114" stroke="#333"/><text x="196.9" y="125" font-size="10.5" text-anchor="middle">04-26</text><polyline points="5.1,110.0 15.1,110.0 25.2,110.0 35.3,110.0 45.5,110.0 55.6,105.5 65.7,105.8 75.8,106.2 85.8,110.0 95.9,110.0 106.1,110.0 116.1,110.0 126.2,104.4 136.4,110.0 146.4,110.0 156.6,104.2 166.6,110.0 176.8,110.0 186.9,110.0 196.9,110.0" fill="none" stroke="#54278f" stroke-width="2.2" stroke-dasharray="" stroke-linejoin="round"/><text x="101.0" y="137" font-size="11.5" text-anchor="middle">CF-99, bloom 2025</text><text transform="translate(-30,55.0) rotate(-90)" font-size="11.5" text-anchor="middle">Risk</text></g></svg></div>
+    <table class="perf">
+      <tr><th></th><th>RMSE</th><th>R&sup2;</th><th>&rho;</th></tr>
+      <tr><td>CF-99</td><td>0.397</td><td>&minus;0.81</td><td>0.45</td></tr>
+      <tr><td>BD-105</td><td>0.394</td><td>&minus;0.69</td><td>0.44</td></tr>
+    </table>
+  </div></div>
+
+  <div class="O"><div class="card" style="font-size:14px;line-height:1.9;padding-top:12px">
+    &bull; Daily risk<br>&bull; N (population)<br>&bull; D (dispersal)<br>&bull; I (infection)
+  </div></div>
+
+  <!-- ================= v9 ================= -->
+  <div class="rowlab" style="background:#e7298a">v9 &nbsp;·&nbsp; base + add-on modules <small>(fire blight)</small></div>
+
+  <div class="IN"><div class="card">
+    <div class="in-item"><span class="ic" style="color:#c0392b">&#127777;</span>Temperature (°C)</div>
+    <div class="in-item"><span class="ic" style="color:#2e86de">&#128167;</span>Relative humidity (%)</div>
+    <div class="in-item"><span class="ic" style="color:#1f5fbf">&#9748;</span>Rainfall (mm)</div>
+    <div class="in-item new"><span class="ic">&#9832;</span>Degree-hours &gt; 18.3 °C<br>(from hourly T)</div>
+    <div class="in-item new"><span class="ic">&#8635;</span>Previous-day rain</div>
+    <div class="in-item new"><span class="ic">&#127800;</span>Bloom period V (0/1)</div>
+    <div class="in-item muted"><span class="ic">&#8776;</span>Wind (m/s) &ndash; optional<br>(not used: no data)</div>
+  </div></div>
+
+  <div class="N"><div class="card">
+    <div class="blk base"><span class="tag b">BASE</span>
+      <div class="t">Discrete logistic growth</div>
+      <div class="eq">N<sub>s</sub> = N<sub>s&minus;1</sub> + r<sub>s</sub> N<sub>s&minus;1</sub>(<span class="n">1</span> &minus; N<sub>s&minus;1</sub>)</div>
+      <div class="eq">r<sub>s</sub> = &mu;<sub>max</sub> &times; <b style="color:#e7298a">g</b><sub>s</sub> &times; f<sub>RH</sub>(RH<sub>s</sub>)</div>
+      <div class="note">f<sub>RH</sub>: RH<sub>th,M</sub> = <span class="val">0</span> (no RH limit) &nbsp;·&nbsp; K = <span class="val">4 d</span></div>
+    </div>
+    <div class="blk addon"><span class="tag a">ADD-ON &middot; heat accumulation</span>
+      <div class="t">Degree-hour driven growth (replaces f<sub>T</sub>)</div>
+      <div class="eq">g = <span class="n">1 &minus; exp</span>(&minus;DH / DH<sub>scale</sub>)</div>
+      <div class="note">DH: degree-hours &gt; 18.3 °C (Maryblyt EIP, Cougarblight)</div>
+    </div>
+    <div class="chart"><svg width="250" height="140" viewBox="0 0 250 140"><g transform="translate(40,10)"><line x1="0" y1="100" x2="202" y2="100" stroke="#333" stroke-width="1.2"/><line x1="0" y1="0" x2="0" y2="100" stroke="#333" stroke-width="1.2"/><line x1="-4" y1="100.0" x2="0" y2="100.0" stroke="#333"/><text x="-7" y="104.0" font-size="11" text-anchor="end">0</text><line x1="-4" y1="54.5" x2="0" y2="54.5" stroke="#333"/><text x="-7" y="58.5" font-size="11" text-anchor="end">0.5</text><line x1="-4" y1="9.1" x2="0" y2="9.1" stroke="#333"/><text x="-7" y="13.1" font-size="11" text-anchor="end">1.0</text><line x1="0.0" y1="100" x2="0.0" y2="104" stroke="#333"/><text x="0.0" y="115" font-size="10.5" text-anchor="middle">0</text><line x1="80.8" y1="100" x2="80.8" y2="104" stroke="#333"/><text x="80.8" y="115" font-size="10.5" text-anchor="middle">100</text><line x1="161.6" y1="100" x2="161.6" y2="104" stroke="#333"/><text x="161.6" y="115" font-size="10.5" text-anchor="middle">200</text><polyline points="0.0,100.0 1.0,97.7 2.0,95.5 3.0,93.3 4.1,91.2 5.1,89.1 6.1,87.1 7.1,85.2 8.1,83.3 9.1,81.4 10.2,79.6 11.2,77.8 12.2,76.1 13.2,74.4 14.2,72.8 15.2,71.2 16.2,69.6 17.3,68.1 18.3,66.6 19.3,65.2 20.3,63.7 21.3,62.4 22.3,61.0 23.3,59.7 24.4,58.5 25.4,57.2 26.4,56.0 27.4,54.8 28.4,53.7 29.4,52.6 30.5,51.5 31.5,50.4 32.5,49.4 33.5,48.4 34.5,47.4 35.5,46.4 36.5,45.5 37.6,44.6 38.6,43.7 39.6,42.8 40.6,41.9 41.6,41.1 42.6,40.3 43.6,39.5 44.7,38.8 45.7,38.0 46.7,37.3 47.7,36.6 48.7,35.9 49.7,35.2 50.8,34.6 51.8,33.9 52.8,33.3 53.8,32.7 54.8,32.1 55.8,31.5 56.8,31.0 57.9,30.4 58.9,29.9 59.9,29.4 60.9,28.8 61.9,28.3 62.9,27.9 63.9,27.4 65.0,26.9 66.0,26.5 67.0,26.0 68.0,25.6 69.0,25.2 70.0,24.8 71.1,24.4 72.1,24.0 73.1,23.6 74.1,23.3 75.1,22.9 76.1,22.6 77.1,22.2 78.2,21.9 79.2,21.6 80.2,21.3 81.2,21.0 82.2,20.7 83.2,20.4 84.3,20.1 85.3,19.8 86.3,19.5 87.3,19.3 88.3,19.0 89.3,18.8 90.3,18.5 91.4,18.3 92.4,18.1 93.4,17.8 94.4,17.6 95.4,17.4 96.4,17.2 97.4,17.0 98.5,16.8 99.5,16.6 100.5,16.4 101.5,16.2 102.5,16.1 103.5,15.9 104.6,15.7 105.6,15.5 106.6,15.4 107.6,15.2 108.6,15.1 109.6,14.9 110.6,14.8 111.7,14.6 112.7,14.5 113.7,14.4 114.7,14.2 115.7,14.1 116.7,14.0 117.7,13.8 118.8,13.7 119.8,13.6 120.8,13.5 121.8,13.4 122.8,13.3 123.8,13.2 124.9,13.1 125.9,13.0 126.9,12.9 127.9,12.8 128.9,12.7 129.9,12.6 130.9,12.5 132.0,12.4 133.0,12.3 134.0,12.3 135.0,12.2 136.0,12.1 137.0,12.0 138.1,11.9 139.1,11.9 140.1,11.8 141.1,11.7 142.1,11.7 143.1,11.6 144.1,11.5 145.2,11.5 146.2,11.4 147.2,11.4 148.2,11.3 149.2,11.3 150.2,11.2 151.2,11.1 152.3,11.1 153.3,11.0 154.3,11.0 155.3,10.9 156.3,10.9 157.3,10.9 158.4,10.8 159.4,10.8 160.4,10.7 161.4,10.7 162.4,10.6 163.4,10.6 164.4,10.6 165.5,10.5 166.5,10.5 167.5,10.5 168.5,10.4 169.5,10.4 170.5,10.4 171.5,10.3 172.6,10.3 173.6,10.3 174.6,10.2 175.6,10.2 176.6,10.2 177.6,10.2 178.7,10.1 179.7,10.1 180.7,10.1 181.7,10.0 182.7,10.0 183.7,10.0 184.7,10.0 185.8,10.0 186.8,9.9 187.8,9.9 188.8,9.9 189.8,9.9 190.8,9.9 191.8,9.8 192.9,9.8 193.9,9.8 194.9,9.8 195.9,9.8 196.9,9.7 197.9,9.7 199.0,9.7 200.0,9.7 201.0,9.7 202.0,9.7" fill="none" stroke="#1f7a34" stroke-width="2.5" stroke-dasharray="" stroke-linejoin="round"/><text x="202" y="100" dy="-8" font-size="10.5" fill="#1f7a34" text-anchor="end">DH_scale = 49 °C·h</text><text x="101.0" y="127" font-size="11.5" text-anchor="middle">Degree-hours > 18.3 °C (per day)</text><text transform="translate(-30,50.0) rotate(-90)" font-size="11.5" text-anchor="middle">g</text></g></svg></div>
+  </div></div>
+
+  <div class="D"><div class="card">
+    <div class="blk base" style="opacity:.55"><span class="tag b">BASE</span>
+      <div class="eq">D = K<sub>d</sub></div>
+      <div class="note" style="text-align:center">used only when no add-on is on</div>
+    </div>
+    <div class="blk addon"><span class="tag a">ADD-ON &middot; splash / insects</span>
+      <div class="t">Weather-driven dispersal</div>
+      <div class="eq" style="font-size:14px">D<sub>w</sub> = <span class="n">1 &minus; exp</span>(&minus;E<sub>total</sub>)</div>
+      <div class="eq" style="font-size:13px">E<sub>total</sub> = a<sub>rain</sub>&middot;<span class="n">Rain</span> + a<sub>wind</sub>&middot;<span class="n">Wind</span><br>+ a<sub>int</sub>&middot;<span class="n">Rain&middot;Wind</span></div>
+      <div class="t" style="margin-top:4px">Insect pathway</div>
+      <div class="eq" style="font-size:14px">D = <span class="n">1</span> &minus; (<span class="n">1</span> &minus; D<sub>w</sub>)(<span class="n">1</span> &minus; D<sub>insect</sub>)</div>
+      <div class="note">wind terms off (no wind data)</div>
+    </div>
+    <div class="chart"><svg width="230" height="140" viewBox="0 0 230 140"><g transform="translate(40,10)"><line x1="0" y1="100" x2="182" y2="100" stroke="#333" stroke-width="1.2"/><line x1="0" y1="0" x2="0" y2="100" stroke="#333" stroke-width="1.2"/><line x1="-4" y1="100.0" x2="0" y2="100.0" stroke="#333"/><text x="-7" y="104.0" font-size="11" text-anchor="end">0</text><line x1="-4" y1="54.5" x2="0" y2="54.5" stroke="#333"/><text x="-7" y="58.5" font-size="11" text-anchor="end">0.5</text><line x1="-4" y1="9.1" x2="0" y2="9.1" stroke="#333"/><text x="-7" y="13.1" font-size="11" text-anchor="end">1.0</text><line x1="0.0" y1="100" x2="0.0" y2="104" stroke="#333"/><text x="0.0" y="115" font-size="10.5" text-anchor="middle">0</text><line x1="60.7" y1="100" x2="60.7" y2="104" stroke="#333"/><text x="60.7" y="115" font-size="10.5" text-anchor="middle">1</text><line x1="121.3" y1="100" x2="121.3" y2="104" stroke="#333"/><text x="121.3" y="115" font-size="10.5" text-anchor="middle">2</text><line x1="182.0" y1="100" x2="182.0" y2="104" stroke="#333"/><text x="182.0" y="115" font-size="10.5" text-anchor="middle">3</text><polyline points="0.0,17.9 0.9,17.3 1.8,16.7 2.7,16.2 3.7,15.6 4.6,15.2 5.5,14.7 6.4,14.3 7.3,13.9 8.2,13.6 9.1,13.3 10.1,13.0 11.0,12.7 11.9,12.4 12.8,12.2 13.7,12.0 14.6,11.7 15.5,11.6 16.5,11.4 17.4,11.2 18.3,11.1 19.2,10.9 20.1,10.8 21.0,10.7 21.9,10.5 22.9,10.4 23.8,10.3 24.7,10.3 25.6,10.2 26.5,10.1 27.4,10.0 28.4,10.0 29.3,9.9 30.2,9.8 31.1,9.8 32.0,9.7 32.9,9.7 33.8,9.6 34.8,9.6 35.7,9.6 36.6,9.5 37.5,9.5 38.4,9.5 39.3,9.4 40.2,9.4 41.2,9.4 42.1,9.4 43.0,9.3 43.9,9.3 44.8,9.3 45.7,9.3 46.6,9.3 47.6,9.3 48.5,9.3 49.4,9.2 50.3,9.2 51.2,9.2 52.1,9.2 53.0,9.2 54.0,9.2 54.9,9.2 55.8,9.2 56.7,9.2 57.6,9.2 58.5,9.2 59.4,9.2 60.4,9.2 61.3,9.1 62.2,9.1 63.1,9.1 64.0,9.1 64.9,9.1 65.8,9.1 66.8,9.1 67.7,9.1 68.6,9.1 69.5,9.1 70.4,9.1 71.3,9.1 72.3,9.1 73.2,9.1 74.1,9.1 75.0,9.1 75.9,9.1 76.8,9.1 77.7,9.1 78.7,9.1 79.6,9.1 80.5,9.1 81.4,9.1 82.3,9.1 83.2,9.1 84.1,9.1 85.1,9.1 86.0,9.1 86.9,9.1 87.8,9.1 88.7,9.1 89.6,9.1 90.5,9.1 91.5,9.1 92.4,9.1 93.3,9.1 94.2,9.1 95.1,9.1 96.0,9.1 96.9,9.1 97.9,9.1 98.8,9.1 99.7,9.1 100.6,9.1 101.5,9.1 102.4,9.1 103.3,9.1 104.3,9.1 105.2,9.1 106.1,9.1 107.0,9.1 107.9,9.1 108.8,9.1 109.7,9.1 110.7,9.1 111.6,9.1 112.5,9.1 113.4,9.1 114.3,9.1 115.2,9.1 116.2,9.1 117.1,9.1 118.0,9.1 118.9,9.1 119.8,9.1 120.7,9.1 121.6,9.1 122.6,9.1 123.5,9.1 124.4,9.1 125.3,9.1 126.2,9.1 127.1,9.1 128.0,9.1 129.0,9.1 129.9,9.1 130.8,9.1 131.7,9.1 132.6,9.1 133.5,9.1 134.4,9.1 135.4,9.1 136.3,9.1 137.2,9.1 138.1,9.1 139.0,9.1 139.9,9.1 140.8,9.1 141.8,9.1 142.7,9.1 143.6,9.1 144.5,9.1 145.4,9.1 146.3,9.1 147.2,9.1 148.2,9.1 149.1,9.1 150.0,9.1 150.9,9.1 151.8,9.1 152.7,9.1 153.6,9.1 154.6,9.1 155.5,9.1 156.4,9.1 157.3,9.1 158.2,9.1 159.1,9.1 160.1,9.1 161.0,9.1 161.9,9.1 162.8,9.1 163.7,9.1 164.6,9.1 165.5,9.1 166.5,9.1 167.4,9.1 168.3,9.1 169.2,9.1 170.1,9.1 171.0,9.1 171.9,9.1 172.9,9.1 173.8,9.1 174.7,9.1 175.6,9.1 176.5,9.1 177.4,9.1 178.3,9.1 179.3,9.1 180.2,9.1 181.1,9.1 182.0,9.1" fill="none" stroke="#1f5fbf" stroke-width="2.5" stroke-dasharray="" stroke-linejoin="round"/><text x="182" y="100" dy="-8" font-size="10.5" fill="#1f5fbf" text-anchor="end">dry-day floor = D_insect 0.90</text><text x="91.0" y="127" font-size="11.5" text-anchor="middle">Rain (mm)</text><text transform="translate(-30,50.0) rotate(-90)" font-size="11.5" text-anchor="middle">D</text></g></svg></div>
+  </div></div>
+
+  <div class="I"><div class="card">
+    <div class="blk base"><span class="tag b">BASE</span>
+      <div class="t">Wetness (RH, Rain) response</div>
+      <div class="note">&bull; if Rain &ge; Rain<sub>th</sub> (<span class="val">0.67 mm</span>) :&nbsp; <i>W</i> = 1</div>
+      <div class="note">&bull; if Rain &lt; Rain<sub>th</sub> :</div>
+      <div class="eq" style="font-size:14px">W(RH, Rain) = <span class="frac"><span class="n">1</span><span><span class="n">1 + exp</span>[&minus;k<sub>I</sub>(RH &minus; RH<sub>th,I</sub>)]</span></span></div>
+    </div>
+    <div class="blk addon"><span class="tag a">ADD-ON &middot; wetting carry-over</span>
+      <div class="t">Previous-day rain wetting (Maryblyt)</div>
+      <div class="eq">W* = <span class="n">max</span>(W, 1[Rain<sub>t&minus;1</sub> &ge; Rain<sub>prev</sub>])</div>
+      <div class="note" style="text-align:center">Rain<sub>prev</sub> = <span class="val">2.3 mm</span> (Maryblyt: 2.5 mm)</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <div class="blk addon" style="flex:1"><span class="tag a">ADD-ON</span>
+        <div class="t">Temperature f<sub>T</sub>(T)</div>
+        <div class="note">cardinal function</div>
+      </div>
+      <div class="blk addon" style="flex:1"><span class="tag a">ADD-ON</span>
+        <div class="t">Vulnerable period V</div>
+        <div class="note">bloom (0/1)</div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between"><svg width="250" height="140" viewBox="0 0 250 140"><g transform="translate(40,10)"><line x1="0" y1="100" x2="202" y2="100" stroke="#333" stroke-width="1.2"/><line x1="0" y1="0" x2="0" y2="100" stroke="#333" stroke-width="1.2"/><line x1="-4" y1="100.0" x2="0" y2="100.0" stroke="#333"/><text x="-7" y="104.0" font-size="11" text-anchor="end">0</text><line x1="-4" y1="54.5" x2="0" y2="54.5" stroke="#333"/><text x="-7" y="58.5" font-size="11" text-anchor="end">0.5</text><line x1="-4" y1="9.1" x2="0" y2="9.1" stroke="#333"/><text x="-7" y="13.1" font-size="11" text-anchor="end">1.0</text><line x1="0.0" y1="100" x2="0.0" y2="104" stroke="#333"/><text x="0.0" y="115" font-size="10.5" text-anchor="middle">20</text><line x1="101.0" y1="100" x2="101.0" y2="104" stroke="#333"/><text x="101.0" y="115" font-size="10.5" text-anchor="middle">60</text><line x1="202.0" y1="100" x2="202.0" y2="104" stroke="#333"/><text x="202.0" y="115" font-size="10.5" text-anchor="middle">100</text><polyline points="0.0,76.6 1.0,76.2 2.0,75.9 3.0,75.5 4.1,75.2 5.1,74.8 6.1,74.4 7.1,74.1 8.1,73.7 9.1,73.3 10.2,72.9 11.2,72.5 12.2,72.2 13.2,71.8 14.2,71.4 15.2,71.0 16.2,70.6 17.3,70.2 18.3,69.8 19.3,69.4 20.3,69.0 21.3,68.5 22.3,68.1 23.3,67.7 24.4,67.3 25.4,66.9 26.4,66.5 27.4,66.0 28.4,65.6 29.4,65.2 30.5,64.7 31.5,64.3 32.5,63.9 33.5,63.4 34.5,63.0 35.5,62.5 36.5,62.1 37.6,61.7 38.6,61.2 39.6,60.8 40.6,60.3 41.6,59.9 42.6,59.4 43.6,59.0 44.7,58.5 45.7,58.0 46.7,57.6 47.7,57.1 48.7,56.7 49.7,56.2 50.8,55.8 51.8,55.3 52.8,54.9 53.8,54.4 54.8,53.9 55.8,53.5 56.8,53.0 57.9,52.6 58.9,52.1 59.9,51.7 60.9,51.2 61.9,50.8 62.9,50.3 63.9,49.9 65.0,49.4 66.0,48.9 67.0,48.5 68.0,48.1 69.0,47.6 70.0,47.2 71.1,46.7 72.1,46.3 73.1,45.8 74.1,45.4 75.1,45.0 76.1,44.5 77.1,44.1 78.2,43.7 79.2,43.2 80.2,42.8 81.2,42.4 82.2,41.9 83.2,41.5 84.3,41.1 85.3,40.7 86.3,40.3 87.3,39.9 88.3,39.5 89.3,39.1 90.3,38.7 91.4,38.3 92.4,37.9 93.4,37.5 94.4,37.1 95.4,36.7 96.4,36.3 97.4,35.9 98.5,35.5 99.5,35.2 100.5,34.8 101.5,34.4 102.5,34.1 103.5,33.7 104.6,33.3 105.6,33.0 106.6,32.6 107.6,32.3 108.6,31.9 109.6,31.6 110.6,31.3 111.7,30.9 112.7,30.6 113.7,30.3 114.7,29.9 115.7,29.6 116.7,29.3 117.7,29.0 118.8,28.7 119.8,28.4 120.8,28.1 121.8,27.8 122.8,27.5 123.8,27.2 124.9,26.9 125.9,26.6 126.9,26.3 127.9,26.0 128.9,25.8 129.9,25.5 130.9,25.2 132.0,25.0 133.0,24.7 134.0,24.4 135.0,24.2 136.0,23.9 137.0,23.7 138.1,23.4 139.1,23.2 140.1,23.0 141.1,22.7 142.1,22.5 143.1,22.3 144.1,22.0 145.2,21.8 146.2,21.6 147.2,21.4 148.2,21.2 149.2,21.0 150.2,20.8 151.2,20.6 152.3,20.4 153.3,20.2 154.3,20.0 155.3,19.8 156.3,19.6 157.3,19.4 158.4,19.2 159.4,19.0 160.4,18.9 161.4,18.7 162.4,18.5 163.4,18.3 164.4,18.2 165.5,18.0 166.5,17.9 167.5,17.7 168.5,17.5 169.5,17.4 170.5,17.2 171.5,17.1 172.6,16.9 173.6,16.8 174.6,16.7 175.6,16.5 176.6,16.4 177.6,16.3 178.7,16.1 179.7,16.0 180.7,15.9 181.7,15.7 182.7,15.6 183.7,15.5 184.7,15.4 185.8,15.3 186.8,15.1 187.8,15.0 188.8,14.9 189.8,14.8 190.8,14.7 191.8,14.6 192.9,14.5 193.9,14.4 194.9,14.3 195.9,14.2 196.9,14.1 197.9,14.0 199.0,13.9 200.0,13.8 201.0,13.7 202.0,13.7" fill="none" stroke="#d35400" stroke-width="2.5" stroke-dasharray="" stroke-linejoin="round"/><polyline points="0.0,9.1 202.0,9.1" fill="none" stroke="#e67e22" stroke-width="1.6" stroke-dasharray="5 4" stroke-linejoin="round"/><text x="202" y="100" dy="-8" font-size="10.5" fill="#c0392b" text-anchor="end">RH_th,I = 41, k_I = 0.05</text><text x="101.0" y="127" font-size="11.5" text-anchor="middle">RH (%)</text><text transform="translate(-30,50.0) rotate(-90)" font-size="11.5" text-anchor="middle">W</text></g></svg><svg width="250" height="140" viewBox="0 0 250 140"><g transform="translate(40,10)"><line x1="0" y1="100" x2="202" y2="100" stroke="#333" stroke-width="1.2"/><line x1="0" y1="0" x2="0" y2="100" stroke="#333" stroke-width="1.2"/><line x1="-4" y1="100.0" x2="0" y2="100.0" stroke="#333"/><text x="-7" y="104.0" font-size="11" text-anchor="end">0</text><line x1="-4" y1="54.5" x2="0" y2="54.5" stroke="#333"/><text x="-7" y="58.5" font-size="11" text-anchor="end">0.5</text><line x1="-4" y1="9.1" x2="0" y2="9.1" stroke="#333"/><text x="-7" y="13.1" font-size="11" text-anchor="end">1.0</text><line x1="0.0" y1="100" x2="0.0" y2="104" stroke="#333"/><text x="0.0" y="115" font-size="10.5" text-anchor="middle">0</text><line x1="53.2" y1="100" x2="53.2" y2="104" stroke="#333"/><text x="53.2" y="115" font-size="10.5" text-anchor="middle">10</text><line x1="106.3" y1="100" x2="106.3" y2="104" stroke="#333"/><text x="106.3" y="115" font-size="10.5" text-anchor="middle">20</text><line x1="159.5" y1="100" x2="159.5" y2="104" stroke="#333"/><text x="159.5" y="115" font-size="10.5" text-anchor="middle">30</text><polyline points="0.0,100.0 1.0,100.0 2.0,100.0 3.0,100.0 4.1,100.0 5.1,100.0 6.1,100.0 7.1,100.0 8.1,100.0 9.1,100.0 10.2,100.0 11.2,100.0 12.2,100.0 13.2,100.0 14.2,100.0 15.2,100.0 16.2,100.0 17.3,100.0 18.3,100.0 19.3,100.0 20.3,100.0 21.3,99.9 22.3,97.9 23.3,96.0 24.4,94.1 25.4,92.2 26.4,90.4 27.4,88.5 28.4,86.7 29.4,84.9 30.5,83.1 31.5,81.3 32.5,79.6 33.5,77.9 34.5,76.2 35.5,74.5 36.5,72.8 37.6,71.2 38.6,69.5 39.6,67.9 40.6,66.4 41.6,64.8 42.6,63.3 43.6,61.7 44.7,60.2 45.7,58.8 46.7,57.3 47.7,55.9 48.7,54.5 49.7,53.1 50.8,51.7 51.8,50.3 52.8,49.0 53.8,47.7 54.8,46.4 55.8,45.1 56.8,43.9 57.9,42.7 58.9,41.5 59.9,40.3 60.9,39.1 61.9,38.0 62.9,36.9 63.9,35.8 65.0,34.7 66.0,33.6 67.0,32.6 68.0,31.6 69.0,30.6 70.0,29.6 71.1,28.7 72.1,27.7 73.1,26.8 74.1,26.0 75.1,25.1 76.1,24.3 77.1,23.4 78.2,22.6 79.2,21.9 80.2,21.1 81.2,20.4 82.2,19.7 83.2,19.0 84.3,18.3 85.3,17.7 86.3,17.1 87.3,16.5 88.3,15.9 89.3,15.4 90.3,14.8 91.4,14.3 92.4,13.9 93.4,13.4 94.4,13.0 95.4,12.5 96.4,12.2 97.4,11.8 98.5,11.4 99.5,11.1 100.5,10.8 101.5,10.6 102.5,10.3 103.5,10.1 104.6,9.9 105.6,9.7 106.6,9.5 107.6,9.4 108.6,9.3 109.6,9.2 110.6,9.1 111.7,9.1 112.7,9.1 113.7,9.1 114.7,9.1 115.7,9.2 116.7,9.3 117.7,9.4 118.8,9.5 119.8,9.7 120.8,9.9 121.8,10.1 122.8,10.3 123.8,10.6 124.9,10.8 125.9,11.2 126.9,11.5 127.9,11.8 128.9,12.2 129.9,12.6 130.9,13.1 132.0,13.5 133.0,14.0 134.0,14.6 135.0,15.1 136.0,15.7 137.0,16.3 138.1,16.9 139.1,17.5 140.1,18.2 141.1,18.9 142.1,19.7 143.1,20.4 144.1,21.2 145.2,22.0 146.2,22.9 147.2,23.8 148.2,24.7 149.2,25.6 150.2,26.6 151.2,27.6 152.3,28.6 153.3,29.6 154.3,30.7 155.3,31.8 156.3,33.0 157.3,34.2 158.4,35.4 159.4,36.6 160.4,37.9 161.4,39.2 162.4,40.6 163.4,42.0 164.4,43.4 165.5,44.8 166.5,46.3 167.5,47.8 168.5,49.4 169.5,51.0 170.5,52.6 171.5,54.3 172.6,56.1 173.6,57.8 174.6,59.6 175.6,61.5 176.6,63.4 177.6,65.3 178.7,67.3 179.7,69.4 180.7,71.5 181.7,73.7 182.7,75.9 183.7,78.2 184.7,80.6 185.8,83.1 186.8,85.7 187.8,88.4 188.8,91.2 189.8,94.3 190.8,97.7 191.8,100.0 192.9,100.0 193.9,100.0 194.9,100.0 195.9,100.0 196.9,100.0 197.9,100.0 199.0,100.0 200.0,100.0 201.0,100.0 202.0,100.0" fill="none" stroke="#d35400" stroke-width="2.5" stroke-dasharray="" stroke-linejoin="round"/><text x="0" y="12" dx="4" font-size="10.5" fill="#c0392b">T_opt = 21.2 °C</text><text x="101.0" y="127" font-size="11.5" text-anchor="middle">Daily mean temperature (°C)</text><text transform="translate(-30,50.0) rotate(-90)" font-size="11.5" text-anchor="middle">f_T</text></g></svg></div>
+    <div class="eq big">I = W* &times; f<sub>T</sub>(T) &times; V</div>
+  </div></div>
+
+  <div class="R"><div class="card">
+    <div class="eq big" style="margin-top:6px">Risk = N &times; D &times; I</div>
+    <div class="note" style="text-align:center">Risk &isin; [0, 1]</div>
+    <div class="chart"><svg width="250" height="150" viewBox="0 0 250 150"><g transform="translate(40,10)"><rect x="1.5" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="11.6" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="21.7" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="31.8" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="41.9" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="52.0" y="76.7" width="7.1" height="33.3" fill="#fdd0a2"/><rect x="62.1" y="76.7" width="7.1" height="33.3" fill="#fdd0a2"/><rect x="72.2" y="76.7" width="7.1" height="33.3" fill="#fdd0a2"/><rect x="82.3" y="76.7" width="7.1" height="33.3" fill="#fdd0a2"/><rect x="92.4" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="102.5" y="43.3" width="7.1" height="66.7" fill="#fdd0a2"/><rect x="112.6" y="43.3" width="7.1" height="66.7" fill="#fdd0a2"/><rect x="122.7" y="10.0" width="7.1" height="100.0" fill="#fdd0a2"/><rect x="132.8" y="43.3" width="7.1" height="66.7" fill="#fdd0a2"/><rect x="142.9" y="43.3" width="7.1" height="66.7" fill="#fdd0a2"/><rect x="153.0" y="10.0" width="7.1" height="100.0" fill="#fdd0a2"/><rect x="163.1" y="10.0" width="7.1" height="100.0" fill="#fdd0a2"/><rect x="173.2" y="76.7" width="7.1" height="33.3" fill="#fdd0a2"/><rect x="183.3" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><rect x="193.4" y="110.0" width="7.1" height="0.0" fill="#fdd0a2"/><line x1="0" y1="110" x2="202" y2="110" stroke="#333" stroke-width="1.2"/><line x1="0" y1="0" x2="0" y2="110" stroke="#333" stroke-width="1.2"/><line x1="-4" y1="110.0" x2="0" y2="110.0" stroke="#333"/><text x="-7" y="114.0" font-size="11" text-anchor="end">0</text><line x1="-4" y1="60.0" x2="0" y2="60.0" stroke="#333"/><text x="-7" y="64.0" font-size="11" text-anchor="end">0.5</text><line x1="-4" y1="10.0" x2="0" y2="10.0" stroke="#333"/><text x="-7" y="14.0" font-size="11" text-anchor="end">1.0</text><line x1="5.1" y1="110" x2="5.1" y2="114" stroke="#333"/><text x="5.1" y="125" font-size="10.5" text-anchor="middle">04-07</text><line x1="106.1" y1="110" x2="106.1" y2="114" stroke="#333"/><text x="106.1" y="125" font-size="10.5" text-anchor="middle">04-17</text><line x1="196.9" y1="110" x2="196.9" y2="114" stroke="#333"/><text x="196.9" y="125" font-size="10.5" text-anchor="middle">04-26</text><polyline points="5.1,102.1 15.1,101.2 25.2,102.0 35.3,100.4 45.5,91.0 55.6,74.5 65.7,110.0 75.8,110.0 85.8,100.1 95.9,91.7 106.1,76.6 116.1,53.8 126.2,15.3 136.4,41.7 146.4,40.5 156.6,15.6 166.6,36.0 176.8,66.1 186.9,92.1 196.9,92.9" fill="none" stroke="#e7298a" stroke-width="2.2" stroke-dasharray="" stroke-linejoin="round"/><text x="101.0" y="137" font-size="11.5" text-anchor="middle">CF-99, bloom 2025</text><text transform="translate(-30,55.0) rotate(-90)" font-size="11.5" text-anchor="middle">Risk</text></g></svg></div>
+    <table class="perf">
+      <tr><th></th><th>RMSE</th><th>R&sup2;</th><th>&rho;</th></tr>
+      <tr><td>CF-99</td><td><b>0.163</b></td><td><b>0.70</b></td><td><b>0.75</b></td></tr>
+      <tr><td>BD-105</td><td><b>0.168</b></td><td><b>0.69</b></td><td><b>0.75</b></td></tr>
+    </table>
+    <div class="note" style="font-size:11px;color:#555">vs pear model (BIR&minus;25)/75; CF-99 = leave-one-season-out, BD-105 = independent station</div>
+  </div></div>
+
+  <div class="O"><div class="card" style="font-size:14px;line-height:1.9;padding-top:12px">
+    &bull; Daily risk<br>&bull; N (population)<br>&bull; D (dispersal)<br>&bull; I (infection)
+  </div></div>
+</div>
+
+<div class="foot">
+  <span><span class="sw" style="background:#fafafa;border:1.5px solid #c9c9c9"></span>BASE module (shared by all bacterial diseases)</span>
+  <span><span class="sw" style="background:#fff3f8;border:2px dashed #e7298a"></span>ADD-ON module (switched on per disease)</span>
+  <span><span class="sw" style="background:#fdd0a2"></span>Risk panels: pear model score (BIR&minus;25)/75 as bars</span>
+  <span>v9 values: fire blight, calibrated to the pear model at CF-99 (hourly_99, 2010&ndash;2025)</span>
+</div>
+</div></body></html>
