@@ -1,0 +1,7 @@
+model,CV_R2,CV_R2_sd,CV_RMSE
+Global linear: fungi only,0.4979,0.0236,22.1156
+Global linear: fungi + GIBSIM,0.6325,0.0144,18.702
+Interval-wise linear (3 bins): fungi only,0.4963,0.0446,22.2116
+Interval-wise linear (3 bins): fungi + GIBSIM,0.6098,0.0251,19.9222
+Varying-coef linear: b_k(G)=b_k+g_k*G,0.6023,0.0233,19.9806
+Random forest (all 7),0.743,0.0081,16.0708

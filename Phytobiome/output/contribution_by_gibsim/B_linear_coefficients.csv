@@ -1,0 +1,61 @@
+group,model,variable,coef,lo,hi
+All samples,fungi only,Alternaria,-7.403,-13.427,-2.317
+All samples,fungi only,Cladosporium,-8.905,-16.971,1.681
+All samples,fungi only,Epicoccum,0.935,-2.247,4.685
+All samples,fungi only,Hannaella,-7.674,-11.703,-3.346
+All samples,fungi only,Papiliotrema,3.013,-2.523,9.846
+All samples,fungi only,Periconia,-2.299,-7.643,2.662
+All samples,fungi only,(intercept),180.714,112.092,270.038
+All samples,fungi + GIBSIM,Alternaria,-5.39,-9.716,-0.98
+All samples,fungi + GIBSIM,Cladosporium,-6.97,-14.458,0.955
+All samples,fungi + GIBSIM,Epicoccum,1.326,-2.168,3.653
+All samples,fungi + GIBSIM,Hannaella,-5.704,-9.632,-1.958
+All samples,fungi + GIBSIM,Papiliotrema,1.485,-2.718,5.973
+All samples,fungi + GIBSIM,Periconia,-1.842,-6.235,1.746
+All samples,fungi + GIBSIM,GIBSIM_pred,0.549,0.349,0.774
+All samples,fungi + GIBSIM,(intercept),128.578,69.4,204.822
+Low (-7–25),fungi only,Alternaria,-6.285,-17.662,5.619
+Low (-7–25),fungi only,Cladosporium,3.944,-11.419,21.817
+Low (-7–25),fungi only,Epicoccum,-5.558,-10.163,-0.295
+Low (-7–25),fungi only,Hannaella,-12.179,-17.582,-6.512
+Low (-7–25),fungi only,Papiliotrema,5.829,-1.187,12.786
+Low (-7–25),fungi only,Periconia,1.448,-4.258,7.111
+Low (-7–25),fungi only,(intercept),77.59,-28.204,193.302
+Low (-7–25),fungi + GIBSIM,Alternaria,-6.638,-22.805,7.187
+Low (-7–25),fungi + GIBSIM,Cladosporium,4.194,-12.828,24.719
+Low (-7–25),fungi + GIBSIM,Epicoccum,-5.384,-12.94,2.14
+Low (-7–25),fungi + GIBSIM,Hannaella,-11.919,-24.339,-1.516
+Low (-7–25),fungi + GIBSIM,Papiliotrema,5.448,-6.251,18.692
+Low (-7–25),fungi + GIBSIM,Periconia,1.529,-6.388,8.643
+Low (-7–25),fungi + GIBSIM,GIBSIM_pred,-0.037,-0.956,1.146
+Low (-7–25),fungi + GIBSIM,(intercept),78.588,-48.889,218.616
+Mid (25–40),fungi only,Alternaria,-9.408,-18.876,8.762
+Mid (25–40),fungi only,Cladosporium,-1.098,-18.476,15.835
+Mid (25–40),fungi only,Epicoccum,2.935,-1.829,8.709
+Mid (25–40),fungi only,Hannaella,-7.263,-14.483,3.465
+Mid (25–40),fungi only,Papiliotrema,-0.725,-15.728,13.074
+Mid (25–40),fungi only,Periconia,1.497,-7.5,8.549
+Mid (25–40),fungi only,(intercept),122.267,-12.861,282.613
+Mid (25–40),fungi + GIBSIM,Alternaria,-7.143,-18.294,1.672
+Mid (25–40),fungi + GIBSIM,Cladosporium,-4.119,-13.898,10.884
+Mid (25–40),fungi + GIBSIM,Epicoccum,2.112,-3.324,7.143
+Mid (25–40),fungi + GIBSIM,Hannaella,-4.24,-10.547,2.801
+Mid (25–40),fungi + GIBSIM,Papiliotrema,0.294,-14.803,8.135
+Mid (25–40),fungi + GIBSIM,Periconia,-1.661,-9.064,6.44
+Mid (25–40),fungi + GIBSIM,GIBSIM_pred,2.188,0.817,3.448
+Mid (25–40),fungi + GIBSIM,(intercept),61.906,-28.331,207.283
+High (40–87),fungi only,Alternaria,-3.55,-11.472,1.871
+High (40–87),fungi only,Cladosporium,-9.807,-27.051,9.203
+High (40–87),fungi only,Epicoccum,3.387,-7.282,11.688
+High (40–87),fungi only,Hannaella,-1.765,-9.974,5.556
+High (40–87),fungi only,Papiliotrema,-3.467,-13.349,10.167
+High (40–87),fungi only,Periconia,-5.422,-12.892,5.216
+High (40–87),fungi only,(intercept),199.573,48.909,358.66
+High (40–87),fungi + GIBSIM,Alternaria,-1.971,-8.575,3.394
+High (40–87),fungi + GIBSIM,Cladosporium,-9.939,-23.13,6.273
+High (40–87),fungi + GIBSIM,Epicoccum,1.844,-7.459,9.446
+High (40–87),fungi + GIBSIM,Hannaella,-0.956,-7.408,3.926
+High (40–87),fungi + GIBSIM,Papiliotrema,-2.483,-11.123,7.669
+High (40–87),fungi + GIBSIM,Periconia,-0.055,-8.088,11.306
+High (40–87),fungi + GIBSIM,GIBSIM_pred,1.035,0.467,1.637
+High (40–87),fungi + GIBSIM,(intercept),107.993,28.148,272.521

@@ -1,0 +1,41 @@
+,lo,hi,group
+GIBSIM_pred,0.3101,0.4233,All samples
+Alternaria,0.2135,0.2869,All samples
+Cladosporium,0.0348,0.0601,All samples
+Epicoccum,0.0004,0.0093,All samples
+Hannaella,0.0276,0.0616,All samples
+Papiliotrema,0.0254,0.0456,All samples
+Periconia,0.0262,0.0528,All samples
+Fungus x fungus,-0.0727,-0.0287,All samples
+Unexplained,0.1898,0.3636,All samples
+Fungi individual (sum),0.3613,0.4844,All samples
+GIBSIM_pred,-0.0105,0.0135,Low (-7–25)
+Alternaria,0.0,0.4417,Low (-7–25)
+Cladosporium,0.0,0.07,Low (-7–25)
+Epicoccum,-0.0028,0.0069,Low (-7–25)
+Hannaella,0.0,0.1801,Low (-7–25)
+Papiliotrema,0.0,0.0655,Low (-7–25)
+Periconia,0.0,0.0883,Low (-7–25)
+Fungus x fungus,-0.0939,-0.0,Low (-7–25)
+Unexplained,0.3023,1.0,Low (-7–25)
+Fungi individual (sum),0.0,0.7797,Low (-7–25)
+GIBSIM_pred,0.0482,0.2285,Mid (25–40)
+Alternaria,0.1507,0.4648,Mid (25–40)
+Cladosporium,0.0018,0.0805,Mid (25–40)
+Epicoccum,-0.0123,0.0016,Mid (25–40)
+Hannaella,0.0714,0.1886,Mid (25–40)
+Papiliotrema,-0.0004,0.0775,Mid (25–40)
+Periconia,-0.0063,0.0581,Mid (25–40)
+Fungus x fungus,-0.1193,0.0541,Mid (25–40)
+Unexplained,0.167,0.5555,Mid (25–40)
+Fungi individual (sum),0.3119,0.7707,Mid (25–40)
+GIBSIM_pred,0.0,0.1787,High (40–87)
+Alternaria,0.0,0.2635,High (40–87)
+Cladosporium,0.0,0.0712,High (40–87)
+Epicoccum,0.0,0.0152,High (40–87)
+Hannaella,-0.011,0.0202,High (40–87)
+Papiliotrema,0.0,0.0386,High (40–87)
+Periconia,0.0,0.0546,High (40–87)
+Fungus x fungus,-0.0851,-0.0,High (40–87)
+Unexplained,0.4858,1.0,High (40–87)
+Fungi individual (sum),0.0,0.4365,High (40–87)

@@ -1,0 +1,97 @@
+GIBSIM_pred cut points: [24.8 39.9]  ->  n per interval = [33 32 33]
+
+## Part A. RF + out-of-fold SHAP interaction decomposition
+Shares in % of FHB variance WITHIN each group (sum of GIBSIM + 6 fungi + fungus x fungus + unexplained = 100)
+group                   All samples  Low (-7–25)  Mid (25–40)  High (40–87)
+n                              98.0         33.0         32.0          33.0
+mean_FHB                       36.1         16.8         23.9          67.4
+Var_y                         990.8        442.4        478.0         541.1
+R2_oof                          0.7          0.4          0.7           0.3
+GIBSIM_pred                    37.3          0.2         13.5          10.5
+Alternaria                     25.1         28.8         33.8          16.2
+Cladosporium                    4.7          2.9          3.7           3.6
+Epicoccum                       0.5          0.2         -0.4           0.8
+Hannaella                       4.6          7.3         12.7           0.4
+Papiliotrema                    3.6          4.1          3.3           1.8
+Periconia                       4.0          5.4          2.5           2.9
+Fungi individual (sum)         42.5         48.8         55.6          25.7
+Fungus x fungus                -5.1         -5.0         -1.8          -4.0
+Unexplained                    26.1         55.8         33.5          67.8
+
+All samples: each fungus split into main effect vs interaction with GIBSIM_pred (% of Var)
+              main  x GIBSIM
+Alternaria    33.2      -8.1
+Cladosporium   5.8      -1.1
+Epicoccum      0.4       0.1
+Hannaella      6.0      -1.4
+Papiliotrema   4.2      -0.6
+Periconia      5.7      -1.7
+
+Relative contribution among the 6 fungi (% of the fungal individual part, negatives kept)
+              Alternaria  Cladosporium  Epicoccum  Hannaella  Papiliotrema  Periconia
+group                                                                                
+All samples         59.2          11.0        1.1       10.8           8.4        9.5
+Low (-7–25)         59.1           6.0        0.4       15.0           8.5       11.1
+Mid (25–40)         60.4           6.7       -0.7       22.6           5.9        4.5
+High (40–87)        63.3          14.1        3.1        1.5           6.9       11.2
+
+Direction: corr(abundance, its SHAP contribution) inside each group (+ raises FHB)
+              All samples  Low (-7–25)  Mid (25–40)  High (40–87)
+Alternaria          -0.84        -0.85        -0.83         -0.84
+Cladosporium        -0.90        -0.94        -0.89         -0.87
+Epicoccum           -0.44        -0.08        -0.64         -0.51
+Hannaella           -0.86        -0.95        -0.95         -0.74
+Papiliotrema         0.71         0.66         0.75          0.54
+Periconia           -0.90        -0.93        -0.91         -0.85
+
+## Part B. Interval-specific linear formula + LMG (Shapley R2) relative importance
+
+LMG relative importance (% of FHB variance within group), model: fungi only
+group           All samples  Low (-7–25)  Mid (25–40)  High (40–87)
+variable                                                           
+Alternaria             20.4         18.9         18.8          10.6
+Cladosporium           10.7          3.2          1.8           7.7
+Epicoccum               2.8          4.0          2.1           3.2
+Hannaella              11.9         30.3         15.5           0.4
+Papiliotrema            5.0          4.2          1.7           0.8
+Periconia               8.8          5.3          2.6           6.6
+R2 (in-sample)         59.6         65.7         42.6          29.4
+
+LMG relative importance (% of FHB variance within group), model: fungi + GIBSIM
+group           All samples  Low (-7–25)  Mid (25–40)  High (40–87)
+variable                                                           
+Alternaria             16.4         18.9         16.5           8.0
+Cladosporium            8.8          3.1          2.1           7.7
+Epicoccum               2.4          3.5          1.4           2.7
+GIBSIM_pred            21.6          5.1         22.2          28.7
+Hannaella               9.2         26.4         11.2           0.3
+Papiliotrema            4.0          4.0          1.7           0.6
+Periconia               7.4          4.8          3.1           4.3
+R2 (in-sample)         69.8         65.7         58.3          52.2
+
+Linear multipliers b_k (FHB %p per +1 unit abundance), model: fungi only
+group         All samples  Low (-7–25)  Mid (25–40)  High (40–87)
+variable                                                         
+(intercept)        180.71        77.59       122.27        199.57
+Alternaria          -7.40        -6.29        -9.41         -3.55
+Cladosporium        -8.90         3.94        -1.10         -9.81
+Epicoccum            0.93        -5.56         2.94          3.39
+Hannaella           -7.67       -12.18        -7.26         -1.76
+Papiliotrema         3.01         5.83        -0.72         -3.47
+Periconia           -2.30         1.45         1.50         -5.42
+
+## Part C. Can 'multiplier x abundance' rebuild FHB?  (10 x 5-fold CV, predictions clipped 0-100)
+                                        model  CV_R2  CV_R2_sd  CV_RMSE
+                    Global linear: fungi only  0.498     0.024   22.116
+                Global linear: fungi + GIBSIM  0.633     0.014   18.702
+    Interval-wise linear (3 bins): fungi only  0.496     0.045   22.212
+Interval-wise linear (3 bins): fungi + GIBSIM  0.610     0.025   19.922
+        Varying-coef linear: b_k(G)=b_k+g_k*G  0.602     0.023   19.981
+                        Random forest (all 7)  0.743     0.008   16.071
+
+FHB_hat = intercept + sum_k b_k * abundance_k   (per GIBSIM_pred interval)
+variable      (intercept)  Alternaria  Cladosporium  Epicoccum  Hannaella  Papiliotrema  Periconia
+group                                                                                             
+Low (-7–25)         77.59       -6.29          3.94      -5.56     -12.18          5.83       1.45
+Mid (25–40)        122.27       -9.41         -1.10       2.94      -7.26         -0.72       1.50
+High (40–87)       199.57       -3.55         -9.81       3.39      -1.76         -3.47      -5.42
