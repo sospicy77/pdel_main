@@ -57,7 +57,8 @@ def pd_at_data(model, Xd, feats):
     rows = np.repeat(Xd.values[None, :, :], len(Xd), axis=0)       # (i, j, p)
     idx = [Xd.columns.get_loc(f) for f in feats]
     rows[:, :, idx] = Xd.values[:, None, idx]                       # x_S from i, x_-S from j
-    pred = model.predict(rows.reshape(-1, Xd.shape[1])).reshape(len(Xd), len(Xd))
+    pred = model.predict(pd.DataFrame(rows.reshape(-1, Xd.shape[1]), columns=Xd.columns)) \
+        .reshape(len(Xd), len(Xd))
     pdv = pred.mean(1)
     return pdv - pdv.mean()
 
@@ -124,7 +125,7 @@ axes[1].barh(s.index, s.values * 100,
                     for i in s.index], height=.55)
 for yi, v in enumerate(s.values * 100):
     axes[1].text(v + .5, yi, f"{v:.1f}%", va="center", fontsize=8)
-axes[1].set_xlabel("% of variance of joint PD f(Alternaria, Papiliotrema, GIBSIM)")
+axes[1].set_xlabel("% of variance of joint PD f(A, P, G)")
 axes[1].set_title("Functional ANOVA decomposition")
 for ax in axes:
     ax.spines[["top", "right"]].set_visible(False)
@@ -132,8 +133,8 @@ fig.tight_layout(); fig.savefig(os.path.join(OUT, "01_H_and_decomposition.png"),
 
 # ------------------------------------------------------------ 3. Conditional 2D PDP
 log("\n## 3. Alternaria x GIBSIM_pred PDP at Papiliotrema levels")
-ga = np.linspace(X[A].quantile(.02), X[A].quantile(.98), 40)
-gg = np.linspace(X[G].quantile(.02), X[G].quantile(.98), 40)
+ga = np.linspace(X[A].min(), X[A].max(), 40)
+gg = np.linspace(X[G].min(), X[G].max(), 40)
 p_cut = X[P].quantile([1 / 3, 2 / 3]).values
 p_grp = np.digitize(X[P], p_cut)                                   # 0 / 1 / 2 tertile
 levels = [X[P][p_grp == k].median() for k in range(3)]
@@ -141,14 +142,12 @@ names = ["low", "mid", "high"]
 surf = []
 for pv in levels:
     AA, GG = np.meshgrid(ga, gg)
-    Z = np.zeros_like(AA)
-    base = X.values
-    for (i, j), _ in np.ndenumerate(AA):
-        rows = base.copy()
-        rows[:, X.columns.get_loc(A)] = AA[i, j]
-        rows[:, X.columns.get_loc(G)] = GG[i, j]
-        rows[:, X.columns.get_loc(P)] = pv
-        Z[i, j] = rf.predict(rows).mean()
+    rows = np.repeat(X.values[None, :, :], AA.size, axis=0)        # (grid, sample, p)
+    rows[:, :, X.columns.get_loc(A)] = AA.ravel()[:, None]
+    rows[:, :, X.columns.get_loc(G)] = GG.ravel()[:, None]
+    rows[:, :, X.columns.get_loc(P)] = pv
+    Z = rf.predict(pd.DataFrame(rows.reshape(-1, X.shape[1]), columns=X.columns)) \
+        .reshape(AA.size, n).mean(1).reshape(AA.shape)
     surf.append(Z)
 vmin, vmax = min(z.min() for z in surf), max(z.max() for z in surf)
 fig, axes = plt.subplots(1, 4, figsize=(17, 4.4), gridspec_kw={"width_ratios": [1, 1, 1, .05]})
@@ -176,7 +175,7 @@ expl = shap.TreeExplainer(rf)
 sv = pd.DataFrame(expl.shap_values(X), columns=X.columns)
 siv = expl.shap_interaction_values(X)
 ia, ip, ig = (X.columns.get_loc(f) for f in TRIO)
-trio_sum = sv[TRIO].sum(1)
+trio_sum = sv[TRIO].sum(axis=1)
 pd.DataFrame({"SHAP_" + f: sv[f] for f in TRIO} | {
     "SHAP_trio_sum": trio_sum, "SHAPint_A_P": 2 * siv[:, ia, ip],
     "SHAPint_A_G": 2 * siv[:, ia, ig], "SHAPint_P_G": 2 * siv[:, ip, ig]}) \

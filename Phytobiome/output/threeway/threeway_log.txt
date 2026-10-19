@@ -1,0 +1,52 @@
+## 1. Friedman H^2 (share of joint PD variance not explained by lower-order terms)
+                                            H2  boot_2.5%  boot_97.5%
+Alternaria x Papiliotrema                0.029      0.008       0.082
+Alternaria x GIBSIM_pred                 0.021      0.004       0.029
+Papiliotrema x GIBSIM_pred               0.003      0.001       0.010
+Alternaria x Papiliotrema x GIBSIM_pred  0.001      0.000       0.002
+
+## 2. Variance decomposition of the joint PD f(A, P, G)
+                                   variance  share
+main: GIBSIM_pred                   169.357  0.522
+main: Alternaria                    138.613  0.427
+2-way: Alternaria x GIBSIM_pred       9.754  0.030
+2-way: Alternaria x Papiliotrema      4.232  0.013
+main: Papiliotrema                    1.760  0.005
+2-way: Papiliotrema x GIBSIM_pred     0.508  0.002
+3-way: A x P x G                      0.281  0.001
+joint PD range: 13.2 - 78.4 %
+pure 3-way term: SD = 0.53 %p, range -2.0 to 1.0 %p
+
+## 3. Alternaria x GIBSIM_pred PDP at Papiliotrema levels
+Papiliotrema low  (6.06): predicted FHB min 15.1 / max 82.1; high-GIBSIM effect at low Alternaria = 32.3 %p, at high Alternaria = 33.6 %p
+Papiliotrema mid  (6.95): predicted FHB min 15.7 / max 80.6; high-GIBSIM effect at low Alternaria = 30.8 %p, at high Alternaria = 33.1 %p
+Papiliotrema high (8.33): predicted FHB min 22.4 / max 79.2; high-GIBSIM effect at low Alternaria = 31.3 %p, at high Alternaria = 34.5 %p
+
+## 4. SHAP of Alternaria conditioned on GIBSIM_pred x Papiliotrema
+GIBSIM Papiliotrema  n  mean_FHB  mean_SHAP_Alt_lowAlt  mean_SHAP_Alt_highAlt
+  high          low 16     41.56                 18.28                  -9.06
+  high         high 33     62.88                 12.17                  -7.46
+   low          low 33     13.38                 14.10                  -9.43
+   low         high 16     22.48                 12.41                  -8.11
+
+## 5. Surrogate tree (depth 3) on RF predictions, using only the trio
+fidelity to RF (R2 vs RF prediction) = 0.911; R2 vs observed = 0.844
+|--- Alternaria <= 7.14
+|   |--- GIBSIM_pred <= 71.81
+|   |   |--- Papiliotrema <= 8.28
+|   |   |   |--- value: [65.78]
+|   |   |--- Papiliotrema >  8.28
+|   |   |   |--- value: [47.65]
+|   |--- GIBSIM_pred >  71.81
+|   |   |--- value: [83.97]
+|--- Alternaria >  7.14
+|   |--- GIBSIM_pred <= 35.02
+|   |   |--- GIBSIM_pred <= 7.24
+|   |   |   |--- value: [21.74]
+|   |   |--- GIBSIM_pred >  7.24
+|   |   |   |--- value: [10.15]
+|   |--- GIBSIM_pred >  35.02
+|   |   |--- Papiliotrema <= 6.88
+|   |   |   |--- value: [27.71]
+|   |   |--- Papiliotrema >  6.88
+|   |   |   |--- value: [56.22]

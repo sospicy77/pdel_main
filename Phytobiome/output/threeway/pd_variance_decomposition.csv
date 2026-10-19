@@ -1,0 +1,8 @@
+,0
+main: GIBSIM_pred,0.5218934831736309
+main: Alternaria,0.42715241131190834
+2-way: Alternaria x GIBSIM_pred,0.030057892760608596
+2-way: Alternaria x Papiliotrema,0.013042026670421635
+main: Papiliotrema,0.005424514255266373
+2-way: Papiliotrema x GIBSIM_pred,0.0015643542548863139
+3-way: A x P x G,0.0008653175732777148
