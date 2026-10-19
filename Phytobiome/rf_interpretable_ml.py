@@ -194,7 +194,8 @@ fig.tight_layout(); fig.savefig(os.path.join(OUT, "03_importance.png"), dpi=200)
 log("\n## 6. SHAP (TreeExplainer)")
 expl = shap.TreeExplainer(rf)
 sv = expl.shap_values(X)
-log(f"base value (mean prediction) = {expl.expected_value if np.isscalar(expl.expected_value) else expl.expected_value[0]:.2f}")
+BASE = float(np.ravel(expl.expected_value)[0])
+log(f"base value (mean prediction) = {BASE:.2f}")
 shap_df = pd.DataFrame(sv, columns=FEATS)
 shap_df.to_csv(os.path.join(OUT, "shap_values.csv"), index=False)
 mean_abs = shap_df.abs().mean().sort_values(ascending=False)
@@ -245,7 +246,7 @@ fig.tight_layout(); fig.savefig(os.path.join(OUT, "06_shap_dependence.png"), dpi
 for tag, idx in {"low": int(np.argmin(y)), "median": int(np.argsort(y)[len(y) // 2]),
                  "high": int(np.argmax(y))}.items():
     plt.figure()
-    shap.plots.waterfall(shap.Explanation(sv[idx], expl.expected_value, X.iloc[idx].values, FEATS),
+    shap.plots.waterfall(shap.Explanation(sv[idx], BASE, X.iloc[idx].values, FEATS),
                          show=False)
     plt.title(f"Sample {idx} ({tag}): observed {y[idx]:.1f}%")
     plt.savefig(os.path.join(OUT, f"07_waterfall_{tag}.png"), dpi=200, bbox_inches="tight"); plt.close()
