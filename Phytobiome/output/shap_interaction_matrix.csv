@@ -1,0 +1,8 @@
+,Alternaria,Cladosporium,Epicoccum,Hannaella,Papiliotrema,Periconia,GIBSIM_pred
+Alternaria,12.484,0.462,0.156,0.625,0.815,0.319,1.609
+Cladosporium,0.462,2.594,0.077,0.273,0.125,0.152,0.537
+Epicoccum,0.156,0.077,0.451,0.11,0.147,0.078,0.185
+Hannaella,0.625,0.273,0.11,3.936,0.247,0.152,0.775
+Papiliotrema,0.815,0.125,0.147,0.247,2.112,0.083,0.326
+Periconia,0.319,0.152,0.078,0.152,0.083,2.326,0.353
+GIBSIM_pred,1.609,0.537,0.185,0.775,0.326,0.353,13.283

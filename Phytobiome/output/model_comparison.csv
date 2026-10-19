@@ -1,0 +1,7 @@
+model,R2,R2_sd,RMSE,RMSE_sd,MAE
+Null (mean),-0.022,0.01,31.813,0.154,28.591
+Linear: GIBSIM_pred only,0.46,0.01,23.122,0.211,18.856
+Linear: all features,0.621,0.014,19.378,0.345,15.951
+RF: mycobiome only,0.626,0.02,19.244,0.498,14.848
+RF: GIBSIM_pred only,0.488,0.042,22.512,0.908,16.04
+RF: full (mycobiome + GIBSIM),0.73,0.02,16.342,0.606,12.659
