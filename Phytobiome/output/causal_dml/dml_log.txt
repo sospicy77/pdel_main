@@ -1,0 +1,21 @@
+## DML effect (FHB %p per +1 CLR unit) and sensitivity to unmeasured confounding
+     genus                adjustment  crude_slope  theta     lo     hi     p  attenuation_pct  R2_D_given_W
+Alternaria                W1: GIBSIM      -13.226 -6.222 -9.189 -3.254 0.000           52.961         0.339
+Alternaria W2: GIBSIM + other genera      -13.226 -5.084 -8.726 -1.442 0.006           61.559         0.535
+ Epicoccum                W1: GIBSIM       -7.015 -1.659 -3.988  0.670 0.163           76.356        -0.311
+ Epicoccum W2: GIBSIM + other genera       -7.015 -0.332 -2.456  1.793 0.759           95.269         0.348
+ Hannaella                W1: GIBSIM      -10.761 -4.494 -7.625 -1.363 0.005           58.238        -0.006
+ Hannaella W2: GIBSIM + other genera      -10.761 -5.153 -8.129 -2.177 0.001           52.113         0.185
+ Periconia                W1: GIBSIM      -13.238 -5.261 -8.721 -1.802 0.003           60.257        -0.030
+ Periconia W2: GIBSIM + other genera      -13.238 -0.724 -4.078  2.631 0.672           94.534         0.459
+
+Robustness values (partial R2 an unmeasured confounder needs with BOTH genus and FHB)
+     genus                adjustment    RV  RV_alpha05  GIBSIM_partialR2_D  GIBSIM_partialR2_Y  theta_adj_1xG  theta_adj_2xG  lo_adj_2xG  hi_adj_2xG  theta_adj_3xG
+Alternaria                W1: GIBSIM 0.341       0.194               0.271               0.299         -1.272          6.275       3.477       9.073         23.188
+Alternaria W2: GIBSIM + other genera 0.249       0.074               0.033               0.253         -3.434         -1.725      -4.391       0.941          0.047
+ Epicoccum                W1: GIBSIM 0.133       0.000               0.085               0.444          0.703          3.300       2.440       4.160          5.109
+ Epicoccum W2: GIBSIM + other genera 0.032       0.000               0.002               0.253         -0.118          0.096      -1.409       1.601          0.310
+ Hannaella                W1: GIBSIM 0.249       0.080               0.078               0.444         -1.463          1.840       0.695       2.986          4.102
+ Hannaella W2: GIBSIM + other genera 0.298       0.136               0.048               0.253         -3.516         -1.792      -4.007       0.422          0.028
+ Periconia                W1: GIBSIM 0.261       0.096               0.161               0.390         -0.530          5.266       3.281       7.252         11.386
+ Periconia W2: GIBSIM + other genera 0.043       0.000               0.001               0.253         -0.410         -0.096      -2.472       2.280          0.219

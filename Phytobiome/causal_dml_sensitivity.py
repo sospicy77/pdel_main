@@ -163,7 +163,7 @@ for ax, wname in zip(axes, R.adjustment.unique()):
         ax.plot(r.crude_slope, i + .22, "|", color="#52514e", ms=10, mew=2)
         ax.plot([r.lo_adj_2xG, r.hi_adj_2xG], [i - .22, i - .22], color=c, lw=1.2, ls=":")
         ax.plot(r.theta_adj_2xG, i - .22, "D", color="white", mec=c, ms=5)
-        ax.text(ax.get_xlim()[1] if False else 3.2, i, f"RV={r.RV:.2f}", va="center", fontsize=8,
+        ax.text(3.2, i, f"RV={r.RV:.2f}", va="center", fontsize=8,
                 color="#52514e")
     ax.axvline(0, color="#52514e", lw=.8)
     ax.set_yticks(range(len(s)), s.genus)
