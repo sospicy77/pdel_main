@@ -6,7 +6,7 @@
 #   gauss_k3  : gaussian, k = 3 (closest to the reference table's edf), primary
 #   betar_k3  : beta regression on FHB/100 (logit link), k = 3, sensitivity
 #   gauss_k10 : gaussian, default k, sensitivity
-# Stability selection: B bootstrap resamples; a term counts as "selected" when p < 0.05
+# Stability selection: B bootstrap resamples (B_K10 for the default-k spec); a term counts as "selected" when p < 0.05
 # (also reported: edf > 0.5, i.e. not shrunk away).
 #
 # Run:  Rscript Phytobiome/gam_reproduce_stability.R
@@ -16,7 +16,8 @@ set.seed(42)
 here <- "Phytobiome"
 out  <- file.path(here, "output", "gam")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
-B <- 200
+B <- 200                      # bootstrap resamples for k = 3 specs
+B_K10 <- 100                  # default-k fits are ~10x slower
 
 d <- as.data.frame(read_excel(file.path(here, "using_data.xlsx")))
 names(d)[names(d) == "GIBSIM_pred"] <- "GIBSIM"
@@ -79,7 +80,8 @@ boot_one <- function(b, sp, gx) {
 }
 stab_rows <- list()
 for (nm in names(specs)) for (gx in c(FALSE, TRUE)) {
-  res <- do.call(rbind, mclapply(seq_len(B), boot_one, sp = specs[[nm]], gx = gx,
+  nB <- if (is.na(specs[[nm]]$k)) B_K10 else B
+  res <- do.call(rbind, mclapply(seq_len(nB), boot_one, sp = specs[[nm]], gx = gx,
                                  mc.cores = max(1, detectCores())))
   nb <- length(unique(res$b))
   agg <- do.call(rbind, lapply(split(res, res$term), function(r)
@@ -93,9 +95,9 @@ for (nm in names(specs)) for (gx in c(FALSE, TRUE)) {
   print(transform(agg, sel_p05_pct = round(sel_p05_pct, 1), edf_gt_0.5_pct = round(edf_gt_0.5_pct, 1),
                   median_edf = round(median_edf, 2), median_p = round(median_p, 3)), row.names = FALSE)
   stab_rows[[paste(nm, gx)]] <- cbind(spec = nm, model = if (gx) "M2" else "M1", B_ok = nb, agg)
+  stab <- do.call(rbind, stab_rows)             # save after every spec
+  write.csv(stab, file.path(out, "gam_stability_selection.csv"), row.names = FALSE)
 }
-stab <- do.call(rbind, stab_rows)
-write.csv(stab, file.path(out, "gam_stability_selection.csv"), row.names = FALSE)
 sink()
 
 # ---------------------------------------------------------------- figure
