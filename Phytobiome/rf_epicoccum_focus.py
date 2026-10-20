@@ -265,6 +265,9 @@ for b in range(30):
 hb = pd.DataFrame(hb)
 H = pd.DataFrame({"H2": pd.Series(h_point), "lo": hb.quantile(.025), "hi": hb.quantile(.975)})
 e_int = e_int.join(H)
+log("Friedman H2, Epicoccum vs each partner and vs all others combined:")
+log(H.round(3).to_string())
+H.round(4).to_csv(os.path.join(OUT, "04_H_statistic.csv"))
 log(e_int.round(3).to_string())
 e_int.round(4).to_csv(os.path.join(OUT, "04_epicoccum_interactions.csv"))
 

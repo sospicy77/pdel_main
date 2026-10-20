@@ -1,0 +1,49 @@
+Features: ['Cladosporium', 'Epicoccum', 'Hannaella', 'Papiliotrema', 'Periconia']
+Spearman correlation with Epicoccum: Cladosporium 0.54, Hannaella 0.03, Papiliotrema -0.17, Periconia 0.51, Alternaria 0.34, GIBSIM_pred -0.28, FHB_incidence -0.30
+
+## 1. Tuning and performance
+best params: {'max_features': 1, 'min_samples_leaf': 1}
+                     model  CV_R2  CV_R2_sd   RMSE    MAE
+               Null (mean) -0.022     0.010 31.659 28.418
+           Linear: 5 fungi  0.467     0.016 23.345 19.100
+    Linear: Epicoccum only  0.074     0.012 30.141 26.294
+        RF: Epicoccum only -0.395     0.124 38.564 31.595
+RF: 4 fungi (no Epicoccum)  0.534     0.019 21.464 17.154
+               RF: 5 fungi  0.524     0.017 21.864 17.402
+Gain from adding Epicoccum (paired over 10 CV repeats): dR2 = -0.010 (min -0.046, max 0.020, positive in 3/10 repeats)
+OOB R2 = 0.539; training R2 = 0.937
+
+## 2. Global importance
+                MDI  Perm_dR2  Perm_sd  DropColumn_dR2  mean_abs_SHAP  rho(value,SHAP)  rank_SHAP
+Hannaella     0.210     0.192    0.072           0.124          7.097           -0.864          1
+Cladosporium  0.223     0.184    0.091           0.098          6.207           -0.880          3
+Papiliotrema  0.205     0.106    0.071           0.008          6.202            0.777          4
+Periconia     0.214     0.096    0.063          -0.009          6.328           -0.899          2
+Epicoccum     0.148     0.015    0.029          -0.010          3.087           -0.633          5
+
+## 3. Epicoccum main effect
+ALE of Epicoccum: range -2.1 to 3.4 %p (net change low->high = -1.0 %p)
+PDP of Epicoccum: range 31.4-38.7 % (span 7.3 %p)
+SHAP of Epicoccum: mean|SHAP| = 3.09 %p, range -7.5 to 7.4
+Spearman(Epicoccum, SHAP_Epicoccum) = -0.63; marginal Spearman(Epicoccum, FHB) = -0.30
+          Epicoccum range  mean SHAP_Epicoccum  observed FHB mean
+Q1 (low)         -0.3-4.6                 3.16              51.88
+Q2                4.6-5.7                -0.03              33.90
+Q3                5.7-6.5                 0.61              37.16
+Q4 (high)         6.6-8.8                -3.89              21.55
+
+## 4. Epicoccum interactions
+Epicoccum main-effect mass = 2.566; interaction mass = 5.070
+              mean|SHAP int| (x2)  share of Epicoccum SHAP mass %     H2     lo     hi
+Cladosporium                1.115                          14.601  0.010  0.006  0.022
+Hannaella                   1.033                          13.535  0.016  0.011  0.030
+Papiliotrema                1.683                          22.035  0.067  0.019  0.137
+Periconia                   1.239                          16.222  0.019  0.008  0.028
+
+Slope of Epicoccum's SHAP vs Epicoccum abundance (%p per unit), split by partner median:
+              slope_SHAP_Epi_partner_low  slope_SHAP_Epi_partner_high  rho_product_vs_interaction
+partner                                                                                          
+Cladosporium                       -1.59                        -1.03                        0.29
+Hannaella                          -1.64                        -1.48                       -0.11
+Papiliotrema                       -0.91                        -2.06                       -0.76
+Periconia                          -1.36                        -1.48                        0.26H2 Epicoccum vs all other fungi combined = 0.037 (computed post-hoc, same model)

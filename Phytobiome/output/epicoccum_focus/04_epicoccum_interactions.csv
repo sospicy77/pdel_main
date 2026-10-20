@@ -1,0 +1,5 @@
+,mean|SHAP int| (x2),share of Epicoccum SHAP mass %,H2,lo,hi
+Cladosporium,1.1149,14.601,0.0097,0.0056,0.0219
+Hannaella,1.0335,13.5349,0.0163,0.0112,0.0299
+Papiliotrema,1.6825,22.0346,0.0669,0.0187,0.1372
+Periconia,1.2387,16.2224,0.0193,0.0075,0.0285
