@@ -1,0 +1,9 @@
+,SHAP-marginal,SHAP-conditional,Causal SV,ASV genera-first,ASV env-first
+Temp (flowering),0.7989,0.8436,0.8042,0.614,0.8999
+RH (flowering),0.863,0.7309,0.8221,0.3299,0.8535
+Alternaria,-0.6993,-0.7381,-0.6282,-0.7413,-0.4207
+Cladosporium,-0.0489,-0.9381,-0.0007,-0.9293,0.0253
+Epicoccum,-0.2554,-0.7868,-0.1892,-0.6981,-0.1027
+Hannaella,-0.3091,-0.9177,-0.1941,-0.9324,-0.1717
+Papiliotrema,0.0301,0.892,-0.0706,0.9318,0.0641
+Periconia,-0.8182,-0.9304,-0.7153,-0.9533,-0.567

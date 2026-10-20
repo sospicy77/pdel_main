@@ -1,0 +1,80 @@
+## Random forest on 8 inputs (environment set: TRH = ['temp_flower_sampling_10days', 'rhum_flower_sampling_10days'])
+CV R2  environment only (2)   0.857 ± 0.009
+CV R2  genera only (6)        0.612 ± 0.034
+CV R2  all 8                  0.857 ± 0.007
+best params (all 8): {'max_features': 4, 'min_samples_leaf': 1}
+
+## Genera model: share of each genus' variance explained by the environment block
+              R2_from_E  Temp (flowering)  RH (flowering)
+Alternaria        0.487             -0.08           -0.65
+Cladosporium      0.323             -0.14           -0.47
+Epicoccum         0.068             -0.16           -0.13
+Hannaella         0.299             -0.39           -0.22
+Papiliotrema      0.244             -0.11            0.55
+Periconia         0.225             -0.19           -0.33
+
+## Attributions (M = 40 Monte-Carlo draws per coalition)
+SHAP-marginal    : v(empty) = 36.82 (mean RF prediction 36.16); max efficiency gap 5.0e-14
+SHAP-conditional : v(empty) = 37.42 (mean RF prediction 36.16); max efficiency gap 3.6e-14
+Causal SV        : v(empty) = 38.73 (mean RF prediction 36.16); max efficiency gap 2.8e-14
+
+mean |attribution| (FHB %p)
+                  SHAP-marginal  SHAP-conditional  Causal SV  ASV genera-first  ASV env-first
+Temp (flowering)          10.08              8.23      10.32              4.27          12.96
+RH (flowering)            14.59              9.39      15.95              5.46          15.75
+Alternaria                 3.24              6.71       3.06             10.54           2.75
+Cladosporium               0.59              3.35       0.63              6.36           0.59
+Epicoccum                  0.82              1.36       0.81              1.70           1.03
+Hannaella                  1.05              3.97       0.83              8.99           1.23
+Papiliotrema               1.02              2.93       0.94              5.22           1.15
+Periconia                  1.26              3.23       1.00              4.42           1.16
+
+direction: Spearman rho(feature value, attribution)
+                  SHAP-marginal  SHAP-conditional  Causal SV  ASV genera-first  ASV env-first
+Temp (flowering)           0.80              0.84       0.80              0.61           0.90
+RH (flowering)             0.86              0.73       0.82              0.33           0.85
+Alternaria                -0.70             -0.74      -0.63             -0.74          -0.42
+Cladosporium              -0.05             -0.94      -0.00             -0.93           0.03
+Epicoccum                 -0.26             -0.79      -0.19             -0.70          -0.10
+Hannaella                 -0.31             -0.92      -0.19             -0.93          -0.17
+Papiliotrema               0.03              0.89      -0.07              0.93           0.06
+Periconia                 -0.82             -0.93      -0.72             -0.95          -0.57
+
+Credit each genus keeps when the environment explains first
+              kept_env_first/genera_first  kept_vs_SHAP-conditional  env credit via genus
+Alternaria                          0.261                     0.410                 1.826
+Cladosporium                        0.093                     0.176                 0.870
+Epicoccum                           0.606                     0.758                 0.943
+Hannaella                           0.137                     0.310                 0.970
+Papiliotrema                        0.221                     0.393                 0.857
+Periconia                           0.263                     0.360                 0.970
+
+Total mean |credit|: environment vs genera
+                  environment  genera
+SHAP-marginal           24.67    7.97
+SHAP-conditional        17.62   21.55
+Causal SV               26.28    7.26
+ASV genera-first         9.74   37.22
+ASV env-first           28.70    7.92
+
+Alternaria mean attribution by abundance side (FHB %p)
+                          SHAP-marginal  SHAP-conditional  Causal SV  ASV genera-first  ASV env-first
+Alternaria < 7.2 (n=36)            3.92              6.20       1.57             10.36           1.20
+Alternaria >= 7.2 (n=62)          -2.57             -6.85      -3.74            -10.17          -2.88
+
+## Bootstrap (20 refits; ASVs and paths, M = 30)
+             ASV_env_first               ASV_genera_first                   kept                 path               rho_env_first              
+                     0.025  0.500  0.975            0.025   0.500   0.975  0.025  0.500  0.975  0.025  0.500  0.975         0.025  0.500  0.975
+genus                                                                                                                                          
+Alternaria           1.772  2.452  3.770            7.728  10.439  12.771  0.167  0.253  0.314  1.253  1.921  4.300        -0.515 -0.398 -0.200
+Cladosporium         0.554  0.816  1.389            4.831   6.944   8.345  0.092  0.118  0.195  0.871  1.095  1.359        -0.316  0.015  0.344
+Epicoccum            0.720  1.105  1.634            1.540   2.079   3.804  0.299  0.542  0.762  0.773  1.018  1.322        -0.419 -0.203  0.107
+Hannaella            0.736  1.084  1.726            7.958   8.895  11.543  0.072  0.126  0.199  1.004  1.163  1.342        -0.618 -0.156  0.049
+Papiliotrema         0.659  1.243  2.188            3.395   4.930   6.902  0.112  0.263  0.618  0.762  1.056  1.375        -0.290  0.085  0.364
+Periconia            0.691  1.373  1.928            3.479   5.372   6.111  0.175  0.251  0.341  0.908  1.205  1.692        -0.736 -0.519 -0.235
+
+Alternaria env-first ASV by abundance side, bootstrap quantiles
+       alt_low_side  alt_high_side
+0.025          0.68          -4.09
+0.500          0.97          -2.51
+0.975          1.85          -1.40
