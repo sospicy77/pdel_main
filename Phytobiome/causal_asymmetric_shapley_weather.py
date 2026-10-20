@@ -11,7 +11,7 @@ Post-sampling rain cannot change the flowering mycobiome; it sits in E because i
 common causes (site, season) with it and acts directly on FHB.
 
 Models
-  FHB model     : random forest on all 10 inputs (tuned by repeated CV)
+  FHB model     : random forest on all inputs (tuned by repeated CV)
   genera | E    : genus = a + B E + r,  r ~ MVN(0, Sigma_r)   (OLS)
   E | (...)     : empirical rows of E, importance-weighted by a Gaussian kernel on known
                   E members (bandwidth 0.5 SD) and by the likelihood of known genera
@@ -22,7 +22,7 @@ Value functions v(S)
   causal (do) : x_notS ~ p(x_notS | do(x_S))             (Heskes et al. 2020)
 
 Attributions (all exact over coalitions)
-  SHAP-marginal, SHAP-conditional, Causal SV : symmetric Shapley, 1024 coalitions
+  SHAP-marginal, SHAP-conditional, Causal SV : symmetric Shapley over all 2^p coalitions
   ASV env-first     : environment block credited before any genus (Frye et al. 2020)
   ASV genera-first  : genera credited before the environment (the opposite claim)
   kept share        = ASV env-first / ASV genera-first   (credit a genus keeps when weather
@@ -32,7 +32,12 @@ Attributions (all exact over coalitions)
 
 Bootstrap: 20 refits of the RF and the genera model for the two ASVs and the paths.
 
+Environment sets (ENV_SET environment variable):
+  full (default) : temperature, RH, GIBSIM, post-sampling rain  -> output/causal_shapley_weather
+  TRH            : flowering temperature and RH only            -> output/causal_shapley_weather_TRH
+
 Run:  python3 Phytobiome/causal_asymmetric_shapley_weather.py
+      ENV_SET=TRH python3 Phytobiome/causal_asymmetric_shapley_weather.py
 """
 import itertools
 import os
@@ -48,7 +53,12 @@ from sklearn.metrics import r2_score
 from sklearn.model_selection import GridSearchCV, KFold, RepeatedKFold
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "output", "causal_shapley_weather")
+ENV_SET = os.environ.get("ENV_SET", "full")
+ENV_SETS = {
+    "full": ["temp_flower_sampling_10days", "rhum_flower_sampling_10days", "GIBSIM", "prcp_after_sampling"],
+    "TRH": ["temp_flower_sampling_10days", "rhum_flower_sampling_10days"],
+}
+OUT = os.path.join(HERE, "output", "causal_shapley_weather" + ("" if ENV_SET == "full" else f"_{ENV_SET}"))
 os.makedirs(OUT, exist_ok=True)
 SEED = 42
 N_BOOT = int(os.environ.get("N_BOOT", 20))
@@ -56,7 +66,7 @@ M_MAIN = int(os.environ.get("M_MAIN", 40))
 TARGET = "FHB_incidence"
 
 df = pd.read_excel(os.path.join(HERE, "using_df_2.xlsx"))
-ENV = ["temp_flower_sampling_10days", "rhum_flower_sampling_10days", "GIBSIM", "prcp_after_sampling"]
+ENV = ENV_SETS[ENV_SET]
 ENV_SHORT = {"temp_flower_sampling_10days": "Temp (flowering)", "rhum_flower_sampling_10days": "RH (flowering)",
              "GIBSIM": "GIBSIM", "prcp_after_sampling": "Rain (after sampling)"}
 GEN = ["Alternaria", "Cladosporium", "Epicoccum", "Hannaella", "Papiliotrema", "Periconia"]
@@ -203,9 +213,9 @@ def paths(model, gm, vcond, M, seed):
 
 
 # ------------------------------------------------------------------ fit
-log("## Random forest on 10 inputs")
+log(f"## Random forest on {p} inputs (environment set: {ENV_SET} = {ENV})")
 gs = GridSearchCV(RandomForestRegressor(n_estimators=300, random_state=SEED, n_jobs=-1),
-                  {"max_features": [2, 3, 4, 6, 10], "min_samples_leaf": [1, 3, 5]},
+                  {"max_features": sorted({2, 3, 4, 6, p}), "min_samples_leaf": [1, 3, 5]},
                   cv=RepeatedKFold(n_splits=5, n_repeats=3, random_state=SEED),
                   scoring="neg_root_mean_squared_error", n_jobs=-1).fit(X, y)
 best = gs.best_params_
@@ -224,11 +234,10 @@ def cv_r2(cols, reps=5):
     return np.mean(out), np.std(out)
 
 
-for name, cols in [("environment only (4)", EI), ("genera only (6)", GI),
-                   ("GIBSIM + genera (7)", [2] + GI), ("all 10", list(range(p)))]:
+for name, cols in [(f"environment only ({NE})", EI), ("genera only (6)", GI), (f"all {p}", list(range(p)))]:
     m_, s_ = cv_r2(cols)
     log(f"CV R2  {name:22s} {m_:.3f} ± {s_:.3f}")
-log(f"best params (all 10): {best}")
+log(f"best params (all {p}): {best}")
 rf = RandomForestRegressor(n_estimators=500, random_state=SEED, n_jobs=-1, **best).fit(X, y)
 gm = GeneraModel(X)
 
