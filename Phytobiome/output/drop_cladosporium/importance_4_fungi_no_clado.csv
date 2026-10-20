@@ -1,0 +1,5 @@
+,Perm_dR2,Perm_sd,Drop_dR2,Drop_positive_of_10,mean_abs_SHAP,"rho(value,SHAP)",SHAP_rank_mean_20seeds,rank_SHAP,rank_Perm
+Hannaella,0.1749,0.1022,0.1189,10,7.809,-0.8963,1.15,1,1
+Papiliotrema,0.172,0.063,0.0732,10,7.7888,0.8181,1.85,2,2
+Periconia,0.1475,0.0604,0.0085,7,6.6438,-0.9157,3.0,3,3
+Epicoccum,0.0505,0.0373,0.0137,8,3.3868,-0.8139,4.0,4,4
