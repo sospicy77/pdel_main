@@ -1,0 +1,56 @@
+Genera model: share of each genus' variance explained by GIBSIM (R2) and slope
+              R2_from_GIBSIM  slope_per_10_GIBSIM
+Alternaria             0.271               -0.387
+Cladosporium           0.164               -0.140
+Epicoccum              0.085               -0.192
+Hannaella              0.078               -0.158
+Papiliotrema           0.110                0.158
+Periconia              0.161               -0.228
+SHAP-marginal    : v(empty) = 36.05 % (mean RF prediction 36.00); max efficiency gap 4.3e-14
+SHAP-conditional : v(empty) = 41.73 % (mean RF prediction 36.00); max efficiency gap 3.6e-14
+ASV              : v(empty) = 41.73 % (mean RF prediction 36.00); max efficiency gap 2.8e-14
+Causal SV        : v(empty) = 39.97 % (mean RF prediction 36.00); max efficiency gap 2.8e-14
+
+mean |attribution| (FHB %p)
+method        SHAP-marginal  SHAP-conditional    ASV  Causal SV
+feature                                                        
+GIBSIM_pred           10.95              9.76  16.17      14.10
+Alternaria             9.84             10.14   7.73       9.51
+Cladosporium           2.12              4.09   2.71       1.81
+Epicoccum              0.69              2.19   1.50       0.67
+Hannaella              3.58              4.62   3.70       3.34
+Papiliotrema           1.57              3.10   2.31       1.43
+Periconia              1.71              4.32   3.06       1.56
+
+direction: Spearman rho(feature value, attribution)
+method        SHAP-marginal  SHAP-conditional   ASV  Causal SV
+feature                                                       
+GIBSIM_pred            0.81              0.88  0.98       0.87
+Alternaria            -0.73             -0.70 -0.68      -0.74
+Cladosporium          -0.86             -0.94 -0.83      -0.81
+Epicoccum             -0.33             -0.94 -0.76      -0.22
+Hannaella             -0.88             -0.92 -0.74      -0.87
+Papiliotrema           0.30              0.80  0.54       0.24
+Periconia             -0.88             -0.96 -0.90      -0.87
+
+Share of each genus' conditional-SHAP credit it keeps when GIBSIM is credited first (ASV)
+              ASV / SHAP-conditional  GIBSIM credit via genus (mean |.|)  rho(GIBSIM, path credit)
+Alternaria                     0.762                               3.956                     0.897
+Cladosporium                   0.662                               1.788                     0.413
+Epicoccum                      0.685                               1.656                     0.010
+Hannaella                      0.802                               2.077                     0.393
+Papiliotrema                   0.747                               1.484                    -0.226
+Periconia                      0.708                               1.616                     0.309
+
+GIBSIM mean |credit|: marginal 10.95 -> ASV 16.17 %p (sum of path credits 12.58)
+
+## Bootstrap (20 refits, M = 40 Monte-Carlo draws)
+                ASV                 SHAPc                 retain                 path               rho_ASV              
+              0.025  0.500   0.975  0.025   0.500   0.975  0.025  0.500  0.975  0.025  0.500  0.975   0.025  0.500  0.975
+feature                                                                                                                  
+Alternaria    4.412  7.380  10.328  7.492  10.023  12.695  0.571  0.749  0.855  2.955  4.433  6.337  -0.737 -0.665 -0.597
+Cladosporium  2.008  3.006   4.009  2.988   4.361   5.224  0.485  0.711  0.830  1.935  2.525  3.048  -0.863 -0.783 -0.634
+Epicoccum     1.143  1.721   2.366  1.991   2.409   3.535  0.461  0.663  0.915  1.632  2.301  3.147  -0.819 -0.723 -0.339
+Hannaella     2.398  3.357   4.447  3.346   4.599   5.946  0.510  0.756  0.992  1.952  2.507  3.159  -0.846 -0.724 -0.578
+Papiliotrema  1.424  2.340   3.201  2.008   3.230   4.007  0.457  0.751  1.023  1.763  2.449  3.239   0.055  0.486  0.736
+Periconia     1.828  3.136   4.540  3.358   4.877   5.812  0.513  0.715  0.829  1.884  2.463  3.169  -0.903 -0.838 -0.789
