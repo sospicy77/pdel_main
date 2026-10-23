@@ -24,6 +24,7 @@ data <- data.frame(
 
 global_params <- list(
   growth_period = 3         # Number of preceding days used to calculate N
+                            # (used when a disease has no growth_period)
 )
 
 # -------------------------------
@@ -32,47 +33,80 @@ global_params <- list(
 
 disease_params <- list(
 
-  fire_blight = list(  ##화상병
-    N0 = 0.15,             # Initial inoculum pressure (0-1)
+  # Initial values from the literature review of the four bacterial
+  # diseases (pear fire blight, pepper bacterial spot, kiwifruit canker,
+  # bacterial wilt). Hourly thresholds of the source models were converted
+  # to daily means with CF-99 hourly_99 data (logistic fit of the daily
+  # fraction of qualifying hours on daily mean RH or daily rain).
+  # mu_max: literature doubling times at T_opt are a few hours
+  # (ln2 * 24 / Td > 2 per day); the discrete logistic is stable only for
+  # r <= 2, so mu_max = min(2, ln2 * 24 / Td).
+  # N0 and K_d have no literature values and are calibration targets.
 
-    mu_max = 0.30,         # Maximum bacterial growth rate
-                           # Growth rate under optimal temperature and RH
+  fire_blight = list(  ##화상병 (Erwinia amylovora)
+    N0 = 0.15,             # Initial inoculum pressure (0-1); no literature value
 
-    T_min = 4,             # Minimum temperature for growth (°C)
-    T_opt = 28,            # Optimum temperature for growth (°C)
-    T_max = 36,            # Maximum temperature for growth (°C)
+    mu_max = 2.00,         # Maximum bacterial growth rate (per day, capped at 2)
 
-    rh_thresh_M = 50,      # RH threshold for multiplication module (%)
-                           # f_RH(RH) in growth rate reaches 0.5 at this RH
+    T_min = 4,             # Growth 4-37 C, optimum 28 C (Santander & Biosca 2017)
+    T_opt = 28,
+    T_max = 37,
 
-    rh_thresh_I = 90,      # RH threshold for infection module (%)
-                           # Wetness response W(RH, Rain) reaches 0.5 at this RH
+    rh_thresh_M = 50,      # Maryblyt EIP has no RH term: f_RH >= 0.95 above 60 % RH
 
-    rain_thresh = 0.25,    # Rainfall threshold (mm)
-                           # Wetness response = 1 when daily rain >= this value
+    rh_thresh_I = 80,      # Maryblyt-type wetting: daily mean RH >= 80 %
 
-    K_d = 0.20             # Dispersal coefficient (constant, 0-1)
-                           # D = K_d; to be fitted to observed data
-                           # or other model results
+    rain_thresh = 0.25,    # Maryblyt wetting: daily rain >= 0.25 mm (Steiner 1990)
+
+    growth_period = 5,     # Cougarblight 4 d window (Smith 1993); Maryblyt EIP
+                           # 66.7 DD > 4.4 C ~ 6.3 d at 15 C bloom; mean 5 d
+
+    K_d = 0.20             # Dispersal coefficient (constant, 0-1); no literature value
   ),
 
-  bacterial_spot = list(  ##고추세균성점무늬병
+  bacterial_spot = list(  ##고추세균점무늬병 (Xanthomonas euvesicatoria)
     N0 = 0.08,
 
-    # Xanthomonas arboricola pv. pruni:
-    # infection tested from 5–35 C;
-    # infection optimum estimated at 28.9 C;
-    # in vitro growth reported from 5–34 C, not above 35 C.
-    mu_max = 0.26,
-    T_min = 5,
-    T_opt = 29,
+    # No growth at 10 C in culture (Kim et al. 2014); optimum 24-30 C
+    # (approximate, compendium value).
+    # Doubling time g(27 C) = 3.28 h (Kim et al. 2014) -> 5.07 per day -> cap 2.
+    mu_max = 2.00,
+    T_min = 10,
+    T_opt = 27,
     T_max = 35,
 
-    rh_thresh_M = 50,
-    rh_thresh_I = 90,
-    rain_thresh = 0.25,
+    rh_thresh_M = 85,      # Growth in wet hours (RH >= 90 % or rain): daily mean
+                           # RH at which half of the hours are wet = 85.1 %
+    rh_thresh_I = 90,      # Leaf wetness assumption of the source model
+    rain_thresh = 10.4,    # Entry needs rain > 4 mm/h: daily rain at which a
+                           # > 4 mm/h hour occurs on half of the days = 10.4 mm
+
+    growth_period = 3,     # No literature value
 
     K_d = 0.20
+  ),
+
+  kiwi_canker = list(  ##키위궤양병 (Pseudomonas syringae pv. actinidiae)
+    N0 = 0.10,             # No literature value
+
+    # M-index valid -6.5 to 24.5 C, maximum at 15.0 C, zero when daily
+    # T_max > 26 C (PSA-V Risk model); conducive 12-18 C, weakened at 25 C
+    # (Serizawa & Ichikawa 1993). T_max = mean(24.5, 26, 25).
+    mu_max = 2.00,
+    T_min = -6.5,
+    T_opt = 15,
+    T_max = 25,
+
+    rh_thresh_M = 76,      # M counted in hours with RH > 81 % (Beresford et al.
+                           # 2017): daily mean RH at which half of the hours
+                           # exceed 81 % = 76.2 %
+    rh_thresh_I = 76,      # Same RH criterion in the R' index
+    rain_thresh = 1.05,    # Rain > 1 mm (Beresford et al. 2017), >= 1.1 mm
+                           # (PSA-V Risk model); mean
+
+    growth_period = 3,     # R = 3-day sum of M (Beresford et al. 2017)
+
+    K_d = 0.20             # No literature value
   ),
 
   bacterial_blight = list( ##벼 흰잎마름병
@@ -93,22 +127,23 @@ disease_params <- list(
     K_d = 0.20
   ),
 
-  ralstonia = list(  ##고추풋마름병
+  ralstonia = list(  ##세균성시들음병 (Ralstonia solanacearum)
     N0 = 0.30,
 
-    # Ralstonia solanacearum:
-    # warm-climate soilborne pathogen;
-    # in vitro maximum growth often around 30 C,
-    # bacterial wilt intensity can be high at 30–35 C depending on host/root injury.
-    mu_max = 0.32,
+    # Bacterial wilt model: r_max 0.35-0.40 per day, 10/30/42 C (Rosso et
+    # al. 1995 type cardinal model); growth about 10-41 C, optimum about
+    # 30 C (Hayward 1991, approximate); T_max = mean(42, 41, 40).
+    mu_max = 0.38,
     T_min = 10,
     T_opt = 30,
-    T_max = 40,
+    T_max = 41,
 
-    # RH is only a weak proxy here; later soil moisture/root infection module needed.
+    # Soil-borne: air RH is only a weak proxy; no literature value.
     rh_thresh_M = 50,
     rh_thresh_I = 90,
     rain_thresh = 0.25,
+
+    growth_period = 3,     # No literature value
 
     # No aboveground dispersal limitation (D = 1).
     K_d = 1.00
@@ -255,6 +290,11 @@ calc_infection <- function(data, disease_param){
 run_model <- function(data, disease_param, growth_period = 3){
 
   validate_disease_params(disease_param)
+
+  # A disease-specific growth_period overrides the global value
+  if(!is.null(disease_param$growth_period)){
+    growth_period <- disease_param$growth_period
+  }
 
   N <- calc_population(data, disease_param, growth_period)
   D <- calc_dispersal(data, disease_param)
