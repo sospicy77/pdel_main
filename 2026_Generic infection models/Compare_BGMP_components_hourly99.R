@@ -11,7 +11,9 @@
 # Candidates
 #   Multiplication : M1 doubling time (exponential from N0, capped at 1)
 #                    M2 continuous logistic (tracked from N0 at season start)
-#                    M3 discrete logistic (v8: restart from N0, last gp days)
+#                    M3 discrete logistic (v8: restart from N0, last gp days),
+#                       with mu_max, N0, T_opt, rh_thresh_M and gp calibrated
+#                       to each example model (M1, M2: v8 defaults)
 #   Dispersal      : D1 constant K_d (v8)
 #                    D2 rain exponential 1 - exp(-a R) (v7 add-on)
 #                    D3 rain threshold 1[R >= R_th]
@@ -41,7 +43,15 @@ keep <- vapply(ex, function(e) is.call(e) && identical(e[[1]], as.name("<-")) &&
                   as.character(e[[2]]) %in% c("disease_params", "global_params")),
                logical(1))
 for (e in ex[keep]) eval(e, v8)
-gp <- v8$global_params$growth_period
+gp <- 3
+
+# Test parameters: v8 values before the literature update (Section 3 of the
+# report), so that this test stays reproducible.
+v8_test_params <- list(
+  fire_blight = list(N0 = 0.15, mu_max = 0.30, T_min = 4, T_opt = 28, T_max = 36,
+                     rh_thresh_M = 50, rh_thresh_I = 90, rain_thresh = 0.25, K_d = 0.20),
+  bacterial_spot = list(N0 = 0.08, mu_max = 0.26, T_min = 5, T_opt = 29, T_max = 35,
+                        rh_thresh_M = 50, rh_thresh_I = 90, rain_thresh = 0.25, K_d = 0.20))
 
 source("bacterial_spot_model.R", encoding = "UTF-8")
 
@@ -110,7 +120,7 @@ run_candidates <- function(d, p, start_idx, rain_a, rain_th_D) {
 # -------------------------------
 # 4. FIRE BLIGHT (bloom period)
 # -------------------------------
-pfb <- v8$disease_params$fire_blight
+pfb <- v8_test_params$fire_blight
 fb <- do.call(rbind, lapply(seasons, function(y) {
   x <- read.csv(file.path("Output", "pear_99", sprintf("pear_daily_%d.csv", y)))
   x$date <- as.Date(x$tm)
@@ -129,7 +139,7 @@ fb <- do.call(rbind, lapply(seasons, function(y) {
 # -------------------------------
 # 5. BACTERIAL SPOT (1 Jun - 31 Aug)
 # -------------------------------
-pbs <- v8$disease_params$bacterial_spot
+pbs <- v8_test_params$bacterial_spot
 bsp <- bs_default_params(); bsp$reinfect <- TRUE
 # hourly_99 has no Jul-Aug data in 2012, 2015, 2018, 2021, 2024 and ends on
 # 29 Jun 2025: only seasons with a complete 1 Jun - 31 Aug record are used.
@@ -154,6 +164,60 @@ bs <- do.call(rbind, lapply(seasons_bs, function(y) {
              ex_D = disp$x, ex_I = ent$x)
 }))
 
+# -------------------------------
+# 5b. M3 CALIBRATION TO THE EXAMPLE MODELS
+# -------------------------------
+# mu_max, N0, T_opt and rh_thresh_M fitted by least squares (bounded
+# logistic transform, multi-start Nelder-Mead) to ex_M for gp = 1..7;
+# the gp with the lowest RMSE is kept. T_min, T_max stay at v8 values.
+# The uncalibrated v8 M3 is kept as M3v8 for the risk-level checks below.
+fb$M3v8 <- fb$M3; bs$M3v8 <- bs$M3
+lead <- 7
+m3_blocks <- function(df) lapply(split(df, df$season), function(s) {
+  d <- day[day$date >= min(s$date) - lead & day$date <= max(s$date), ]
+  list(d = d, k = (lead + 1):nrow(d))
+})
+m3_sim <- function(th, blk, p, gp) unlist(lapply(blk, function(b) {
+  q <- p; q$mu_max <- th[1]; q$N0 <- th[2]; q$T_opt <- th[3]; q$rh_thresh_M <- th[4]
+  mult_logistic_disc(growth_rate(b$d, q), q$N0, gp)[b$k]
+}))
+m3_fit <- function(df, p, gp) {
+  blk <- m3_blocks(df)
+  lo <- c(0.01, 0.001, p$T_min + 1, 0); hi <- c(2, 0.9, p$T_max - 1, 100)
+  tf <- function(z) lo + (hi - lo) * plogis(z)
+  obj <- function(z) sum((m3_sim(tf(z), blk, p, gp) - df$ex_M)^2)
+  best <- NULL; set.seed(1)
+  for (i in 1:6) {
+    z0 <- if (i == 1) c(0, -1, 0, 0) else rnorm(4, 0, 1.5)
+    o <- optim(z0, obj, control = list(maxit = 500))
+    o <- optim(o$par, obj, control = list(maxit = 500))
+    if (is.null(best) || o$value < best$value) best <- o
+  }
+  th <- tf(best$par)
+  list(th = th, gp = gp, pred = m3_sim(th, blk, p, gp),
+       rmse = sqrt(best$value / nrow(df)))
+}
+m3_calibrate <- function(df, p) {
+  fits <- parallel::mclapply(1:7, function(g) m3_fit(df, p, g),
+                             mc.cores = max(1, min(4, parallel::detectCores())))
+  grid <- data.frame(gp = 1:7, rmse = sapply(fits, `[[`, "rmse"),
+                     t(sapply(fits, `[[`, "th")))
+  names(grid)[3:6] <- c("mu_max", "N0", "T_opt", "rh_thresh_M")
+  list(best = fits[[which.min(grid$rmse)]], grid = grid)
+}
+fb <- fb[order(fb$season, fb$day), ]; bs <- bs[order(bs$season, bs$day), ]
+cal_fb <- m3_calibrate(fb, pfb); fb$M3 <- cal_fb$best$pred
+cal_bs <- m3_calibrate(bs, pbs); bs$M3 <- cal_bs$best$pred
+m3_par <- rbind(
+  data.frame(disease = "fire_blight", gp = cal_fb$best$gp, t(round(cal_fb$best$th, 3))),
+  data.frame(disease = "bacterial_spot", gp = cal_bs$best$gp, t(round(cal_bs$best$th, 3))))
+names(m3_par)[3:6] <- c("mu_max", "N0", "T_opt", "rh_thresh_M")
+write.csv(m3_par, file.path(out_dir, "m3_calibrated_params.csv"), row.names = FALSE)
+write.csv(rbind(data.frame(disease = "fire_blight", cal_fb$grid),
+                data.frame(disease = "bacterial_spot", cal_bs$grid)),
+          file.path(out_dir, "m3_gp_grid.csv"), row.names = FALSE)
+print(m3_par)
+
 write.csv(fb, file.path(out_dir, "fire_blight_daily.csv"), row.names = FALSE)
 write.csv(bs, file.path(out_dir, "bacterial_spot_daily.csv"), row.names = FALSE)
 
@@ -172,21 +236,23 @@ metrics <- function(df, disease) {
   m <- do.call(rbind, lapply(c("M1", "M2", "M3"), function(k) data.frame(
     disease, component = "Multiplication", algorithm = k,
     spearman = cor(df[[k]], df$ex_M, method = "spearman"),
+    rmse = sqrt(mean((df[[k]] - df$ex_M)^2)),
+    r2 = 1 - sum((df[[k]] - df$ex_M)^2) / sum((df$ex_M - mean(df$ex_M))^2),
     auc = NA, within_season_sd = within_sd(df[[k]], df$season),
     saturated_pct = 100 * mean(df[[k]] >= 0.99),
     decline_pct = decline_pct(df[[k]], df$season))))
   d <- do.call(rbind, lapply(c("D1", "D2", "D3"), function(k) data.frame(
     disease, component = "Dispersal", algorithm = k,
     spearman = suppressWarnings(cor(df[[k]], df$ex_D, method = "spearman")),
-    auc = auc(df[[k]], df$ex_D), within_season_sd = within_sd(df[[k]], df$season),
+    rmse = NA, r2 = NA, auc = auc(df[[k]], df$ex_D), within_season_sd = within_sd(df[[k]], df$season),
     saturated_pct = NA, decline_pct = NA)))
   i <- do.call(rbind, lapply(c("I1", "I2", "I3"), function(k) data.frame(
     disease, component = "Infection", algorithm = k,
     spearman = cor(df[[k]], df$ex_I, method = "spearman"),
-    auc = auc(df[[k]], df$ex_I), within_season_sd = within_sd(df[[k]], df$season),
+    rmse = NA, r2 = NA, auc = auc(df[[k]], df$ex_I), within_season_sd = within_sd(df[[k]], df$season),
     saturated_pct = NA, decline_pct = NA)))
   ex <- data.frame(disease, component = c("Multiplication", "Dispersal", "Infection"),
-                   algorithm = "example", spearman = 1, auc = NA,
+                   algorithm = "example", spearman = 1, rmse = NA, r2 = NA, auc = NA,
                    within_season_sd = c(within_sd(df$ex_M, df$season),
                                         within_sd(df$ex_D, df$season),
                                         within_sd(df$ex_I, df$season)),
@@ -198,7 +264,7 @@ met <- rbind(metrics(fb, "fire_blight"), metrics(bs, "bacterial_spot"))
 
 # Risk-level check: does the dispersal choice change the BGMP risk ranking?
 risk_cor <- function(df, ref) sapply(c("D1", "D2", "D3"), function(k)
-  cor(df$M3 * df[[k]] * df$I1, ref, method = "spearman"))
+  cor(df$M3v8 * df[[k]] * df$I1, ref, method = "spearman"))
 rc <- rbind(fire_blight = risk_cor(fb, fb$BIR), bacterial_spot = risk_cor(bs, bs$ex_I))
 # Overlap of rain-driven dispersal with the rain term of infection (I1)
 ov <- rbind(fire_blight = sapply(c("D2", "D3"), function(k) cor(fb[[k]], fb$I1, method = "spearman")),
@@ -206,31 +272,35 @@ ov <- rbind(fire_blight = sapply(c("D2", "D3"), function(k) cor(fb[[k]], fb$I1, 
 
 # Same check for the infection candidates (Risk = M3 x D1 x I_k)
 risk_cor_I <- function(df, ref) sapply(c("I1", "I2", "I3"), function(k)
-  cor(df$M3 * df$D1 * df[[k]], ref, method = "spearman"))
+  cor(df$M3v8 * df$D1 * df[[k]], ref, method = "spearman"))
 rcI <- rbind(fire_blight = risk_cor_I(fb, fb$BIR), bacterial_spot = risk_cor_I(bs, bs$ex_I))
 
 # Start-date sensitivity of the multiplication candidates: season start
 # moved 10 days earlier; mean |N(start) - N(start - 10 d)| over the test period
-start_shift <- function(d_all, p, first, last, shift = 10) {
-  base <- day[day$date >= first - gp & day$date <= last, ]
-  early <- day[day$date >= first - shift - gp & day$date <= last, ]
-  a <- run_candidates(base, p, gp + 1, 0, 1)
-  b <- run_candidates(early, p, gp + 1, 0, 1)
+start_shift <- function(d_all, p, first, last, cal, shift = 10) {
+  base <- day[day$date >= first - lead & day$date <= last, ]
+  early <- day[day$date >= first - shift - lead & day$date <= last, ]
+  a <- run_candidates(base, p, lead + 1, 0, 1)
+  b <- run_candidates(early, p, lead + 1, 0, 1)
   b <- b[match(a$date, b$date), ]
+  m3 <- function(d, k) m3_sim(cal$th, list(list(d = d, k = k)), p, cal$gp)
+  a$M3 <- m3(base, (lead + 1):nrow(base))
+  b$M3 <- m3(early, (shift + lead + 1):nrow(early))
   sapply(c("M1", "M2", "M3"), function(k) mean(abs(a[[k]] - b[[k]])))
 }
 ss_fb <- rowMeans(sapply(seasons, function(y) {
   w <- fb$season == y
-  start_shift(day, pfb, min(fb$date[w]), max(fb$date[w]))
+  start_shift(day, pfb, min(fb$date[w]), max(fb$date[w]), cal_fb$best)
 }))
 ss_bs <- rowMeans(sapply(seasons_bs, function(y)
-  start_shift(day, pbs, as.Date(sprintf("%d-06-01", y)), as.Date(sprintf("%d-08-31", y)))))
+  start_shift(day, pbs, as.Date(sprintf("%d-06-01", y)), as.Date(sprintf("%d-08-31", y)),
+              cal_bs$best)))
 ss <- rbind(fire_blight = ss_fb, bacterial_spot = ss_bs)
 write.csv(round(rcI, 3), file.path(out_dir, "risk_spearman_by_infection.csv"))
 write.csv(round(ss, 3), file.path(out_dir, "multiplication_start_shift.csv"))
 print(round(rcI, 3)); print(round(ss, 3))
 
-met[, 4:8] <- round(met[, 4:8], 3)
+met[, 4:10] <- round(met[, 4:10], 3)
 write.csv(met, file.path(out_dir, "metrics.csv"), row.names = FALSE)
 write.csv(round(rc, 3), file.path(out_dir, "risk_spearman_by_dispersal.csv"))
 write.csv(round(ov, 3), file.path(out_dir, "dispersal_infection_overlap.csv"))
@@ -242,7 +312,7 @@ print(met); print(round(rc, 3)); print(round(ov, 3))
 col_ex <- "#444444"
 col_c  <- c("#1b9e77", "#7570b3", "#d95f02")
 lab_M <- c(ex = "Example model", M1 = "M1 Doubling time", M2 = "M2 Continuous logistic",
-           M3 = "M3 Discrete logistic (v8)")
+           M3 = "M3 Discrete logistic (calibrated)")
 lab_D <- c(ex = "Example model", D1 = "D1 Constant K_d (v8)", D2 = "D2 Rain exponential",
            D3 = "D3 Rain threshold")
 lab_I <- c(ex = "Example model", I1 = "I1 Wetness (v8)", I2 = "I2 Wetness x f(T)",
