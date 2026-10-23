@@ -196,11 +196,12 @@ start_shift <- function(dz, alg, th, gp, shift = 10) {
   df <- DAT[[dz]]; Tl <- TLIM[[dz]]
   mean(sapply(split(df, df$season), function(s) {
     first <- min(s$date); last <- max(s$date)
-    mk <- function(extra) {
+    n <- nrow(s)
+    run <- function(extra) {
       d <- day[day$date >= first - lead - extra & day$date <= last, ]
-      list(list(d = d, k = (lead + extra + 1):nrow(d)))
+      tail(mult_sim(alg, th, list(list(d = d, k = (lead + 1):nrow(d))), Tl, gp), n)
     }
-    mean(abs(mult_sim(alg, th, mk(0), Tl, gp) - mult_sim(alg, th, mk(shift), Tl, gp)))
+    mean(abs(run(0) - run(shift)))
   }))
 }
 
@@ -262,15 +263,19 @@ risk_eval <- function(dz, M3) {
 # -------------------------------
 # 8. RUN
 # -------------------------------
+# Set refit <- FALSE to rebuild tables and figures from results.RData
+refit <- !file.exists(file.path(out_dir, "results.RData"))
 t0 <- Sys.time()
-MULT <- lapply(c(fb = "fb", bs = "bs"), mult_eval)
-cat("multiplication done", format(Sys.time() - t0), "\n")
-DISP <- lapply(c(fb = "fb", bs = "bs"), comp_eval, comp = "D")
-INF  <- lapply(c(fb = "fb", bs = "bs"), comp_eval, comp = "I")
-cat("dispersal/infection done", format(Sys.time() - t0), "\n")
-RISK <- lapply(c(fb = "fb", bs = "bs"), function(dz) risk_eval(dz, MULT[[dz]]$res$M3$fitted))
-cat("risk level done", format(Sys.time() - t0), "\n")
-save(MULT, DISP, INF, RISK, file = file.path(out_dir, "results.RData"))
+if (refit) {
+  MULT <- lapply(c(fb = "fb", bs = "bs"), mult_eval)
+  cat("multiplication done", format(Sys.time() - t0), "\n")
+  DISP <- lapply(c(fb = "fb", bs = "bs"), comp_eval, comp = "D")
+  INF  <- lapply(c(fb = "fb", bs = "bs"), comp_eval, comp = "I")
+  cat("dispersal/infection done", format(Sys.time() - t0), "\n")
+  RISK <- lapply(c(fb = "fb", bs = "bs"), function(dz) risk_eval(dz, MULT[[dz]]$res$M3$fitted))
+  cat("risk level done", format(Sys.time() - t0), "\n")
+  save(MULT, DISP, INF, RISK, file = file.path(out_dir, "results.RData"))
+} else load(file.path(out_dir, "results.RData"))
 
 # -------------------------------
 # 9. TABLES
