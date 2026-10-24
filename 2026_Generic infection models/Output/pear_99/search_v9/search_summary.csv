@@ -1,0 +1,32 @@
+"config","n_par","gp","modules","RMSE","R2_NSE","Pearson_r","Spearman_rho","AUC_infection","AUC_score_ge_1_3","AUC_score_ge_2_3"
+"v9 plan A (7 parameters)",7,3,"",0.2206,0.439,0.6684,0.5789,0.9206,0.7723,0.8699
+"v9 plan A (7 parameters) + T_min",8,3,"",0.2122,0.4808,0.7084,0.5729,0.9505,0.7356,0.9271
+"v9 plan A (7 parameters) + T_max",8,3,"",0.2213,0.4355,0.6652,0.5779,0.9165,0.7719,0.8695
+"v9 plan A (7 parameters) + rh_thresh_M",8,3,"",0.2079,0.5017,0.7157,0.6379,0.935,0.7986,0.9136
+"v9 plan A (7 parameters) + k_M",8,3,"",0.2169,0.4576,0.69,0.6392,0.9596,0.8098,0.8908
+"v9 plan A (7 parameters) + k_I",8,3,"",0.2225,0.4292,0.6598,0.5816,0.9187,0.7804,0.8585
+"v9 plan A (7 parameters) + T_opt_I",8,3,"",0.2179,0.4527,0.6763,0.5869,0.9257,0.781,0.8653
+"v9 plan A (7 parameters) + rh_thresh_M + T_min",9,3,"",0.2026,0.527,0.7308,0.6108,0.948,0.7668,0.9306
+"v9 plan A (7 parameters) + rh_thresh_M + T_max",9,3,"",0.2103,0.4904,0.7058,0.6262,0.9352,0.7943,0.9027
+"v9 plan A (7 parameters) + rh_thresh_M + k_M",9,3,"",0.2106,0.4889,0.7046,0.6236,0.9354,0.7929,0.9012
+"v9 plan A (7 parameters) + rh_thresh_M + k_I",9,3,"",0.2008,0.5353,0.7403,0.6665,0.9732,0.8181,0.9179
+"v9 plan A (7 parameters) + rh_thresh_M + T_opt_I",9,3,"",0.2112,0.4858,0.7009,0.6267,0.9175,0.799,0.8963
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + T_min",10,3,"",0.201,0.5343,0.7344,0.6242,0.9575,0.7785,0.9284
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + T_max",10,3,"",0.2038,0.5212,0.7283,0.6509,0.947,0.8116,0.908
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + k_M",10,3,"",0.203,0.525,0.7317,0.6537,0.9513,0.8127,0.91
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + T_opt_I",10,3,"",0.2029,0.5253,0.7311,0.6568,0.9482,0.817,0.9067
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [prev_rain]",10,3,"prev_rain",0.1986,0.5454,0.7448,0.6744,0.9622,0.8391,0.8904
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [dew]",10,3,"dew",0.1939,0.5666,0.7633,0.6887,0.9831,0.8284,0.9331
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [dh_growth]",10,3,"dh_growth",0.1797,0.6278,0.793,0.6904,0.9544,0.8265,0.9429
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [w_floor]",10,3,"w_floor",0.194,0.566,0.7624,0.6827,0.9804,0.8218,0.9365
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [dh_growth] + [prev_rain]",11,3,"dh_growth+prev_rain",0.1638,0.6908,0.8324,0.7609,0.9915,0.8724,0.9642
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [dh_growth] + [dew]",11,3,"dh_growth+dew",0.1804,0.625,0.7911,0.6918,0.9585,0.8278,0.942
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [dh_growth] + [w_floor]",11,3,"dh_growth+w_floor",0.1803,0.6254,0.7915,0.692,0.9556,0.8278,0.9429
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [dh_growth] + [prev_rain] + [dew]",12,3,"dh_growth+prev_rain+dew",0.1635,0.692,0.8331,0.7631,0.9917,0.8743,0.964
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [dh_growth] + [prev_rain] + [w_floor]",12,3,"dh_growth+prev_rain+w_floor",0.1723,0.658,0.813,0.7364,0.9734,0.86,0.9503
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [dh_growth] + [prev_rain] | gp=1",11,1,"dh_growth+prev_rain",0.1905,0.5819,0.7759,0.7311,0.9773,0.8718,0.9177
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [dh_growth] + [prev_rain] | gp=2",11,2,"dh_growth+prev_rain",0.1808,0.6234,0.7926,0.7263,0.9662,0.8603,0.9339
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [dh_growth] + [prev_rain] | gp=4",11,4,"dh_growth+prev_rain",0.1626,0.6954,0.8347,0.7486,0.9922,0.8606,0.9671
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [dh_growth] + [prev_rain] | gp=5",11,5,"dh_growth+prev_rain",0.1655,0.6841,0.8279,0.7342,0.9915,0.85,0.9646
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [dh_growth] + [prev_rain] | gp=6",11,6,"dh_growth+prev_rain",0.1713,0.6616,0.8144,0.7227,0.9909,0.8432,0.959
+"v9 plan A (7 parameters) + rh_thresh_M + k_I + [dh_growth] + [prev_rain] | gp=7",11,7,"dh_growth+prev_rain",0.1858,0.602,0.7771,0.6919,0.9651,0.8325,0.9324

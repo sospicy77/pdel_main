@@ -1,0 +1,7 @@
+"parameter","module","v8","v8_fit_ID1001","v8_fit2","v8_fit2_bound","LOSO_min","LOSO_max","target_BIR100_fit","BIR100_bound","lower","upper"
+"K_d","D",0.2,0.9165,1,"upper bound",1,1,1,"upper bound",0.01,1
+"N0","N",0.15,0.3337,0.0496,"",0.0425,0.0543,0.2031,"",0.01,0.99
+"mu_max","N",0.3,1.4129,2,"upper bound",2,2,1.3566,"",0,2
+"T_opt","N (f_T)",28,35.5,32.7284,"",31.7626,33.393,35.5,"upper bound",4.5,35.5
+"rh_thresh_I","I (wetness)",90,40,46.5338,"",41.8636,47.0534,40,"lower bound",40,100
+"rain_thresh","I (wetness)",0.25,0,0,"lower bound",0,0.6995,0,"lower bound",0,10
