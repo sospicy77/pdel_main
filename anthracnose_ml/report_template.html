@@ -96,7 +96,7 @@ pre { font-family: var(--f-mono); font-size: 12.5px; background: var(--surface);
     <li><b>발생</b>은 기상 조건이 가장 크게 좌우했습니다. <b class="up">7~8월 누적강수량</b>이 약 140 mm를 넘으면 발생 위험이 올라가고(발생률 120 mm 이하 23% → 120 mm 초과 54%), <b class="up">6월 평균기온</b>이 높을수록, <b class="up">노출값</b>(정식~조사일 severity potential)이 높을수록 위험이 커졌습니다.</li>
     <li>농가 요인으로는 <b class="up">작년 탄저 발생</b>(발생률 37% → 56%)이 위험을 높였고 <b class="down">제초매트 사용</b>(52% → 38%)이 위험을 낮췄습니다. 방제 쪽에서는 <b class="up">강우 후 방제까지 지연이 긴 농가</b>(7~8월 사후지연 최대 20일 초과 시 62%)와 무방제 농가(68%)의 발생률이 높았습니다.</li>
     <li><b>피해 정도</b>는 발병 이후 정보가 대부분을 설명했습니다. <b class="down">초발이 늦을수록</b>(1 SD=10.7일 늦을 때 한 단계 더 심해질 오즈 0.21배), <b class="down">이환과를 바로 솎아내는 농가</b>(0.16배)는 피해가 작았고, <b class="up">작년 발생 농가</b>(5.5배)는 피해가 컸습니다. 보호살균제(카) 살포 횟수가 많을수록 피해가 작아지는 경향(0.48배, p=0.06)도 보였습니다.</li>
-    <li>피해도 연속값 회귀는 설명력이 낮아(R² 0.15), 사용자 제안대로 <b>3단계 범주(경 &lt;2% · 중 2~20% · 심 ≥20%)</b> 모델을 피해도의 주 모델로 삼았습니다. 150건 전체 피해도를 바로 예측하는 허들 모형은 단일 회귀보다 원척도 R²는 높았으나(0.11 vs 0.07) 순위 예측력은 비슷하거나 낮았습니다.</li>
+    <li>피해도 연속값 회귀는 log10 변환과 튜닝으로 R² 0.15 → 약 0.33으로 올렸지만(07장), 여전히 3단계 범주 모델이 더 안정적입니다. 성능을 떨어뜨리는 것은 100% 피해인데 변수상 경미해 보이는 농가(Y25M062 등)와 감염주 1–3주 농가(Y25M127-1 등)입니다. 처음 회귀(R² 0.15)는 설명력이 낮아 사용자 제안대로 <b>3단계 범주(경 &lt;2% · 중 2~20% · 심 ≥20%)</b> 모델을 피해도의 주 모델로 삼았습니다. 150건 전체 피해도를 바로 예측하는 허들 모형은 단일 회귀보다 원척도 R²는 높았으나(0.11 vs 0.07) 순위 예측력은 비슷하거나 낮았습니다.</li>
   </ul>
 </section>
 
@@ -187,7 +187,35 @@ pre { font-family: var(--f-mono); font-size: 12.5px; background: var(--surface);
 </section>
 
 <section>
-  <h2><span class="no">07</span>해석할 때 주의할 점</h2>
+  <h2><span class="no">07</span>피해도 회귀 개선과 문제 농가</h2>
+  <p>05장의 연속값 회귀(logit, R² 0.15)를 개선하려고 목표변수 변환, 변수 조합, 하이퍼파라미터를 차례로 탐색했습니다. 가장 큰 개선은 변환에서 나왔습니다. 감염주율은 0.36%에서 100%까지 몇 자릿수에 걸쳐 있어 log10 척도가 자료 구조에 맞고, logit 변환은 1.0인 농가를 다른 값보다 지나치게 멀리 밀어냈습니다.</p>
+  <h3>목표변수 변환 비교 (변수 선택은 fold 안, 기본 하이퍼파라미터)</h3>
+  {{rt_transform}}
+  <p class="note">변환마다 R²의 척도가 다르므로 Spearman ρ를 함께 봐야 합니다. log10은 R²와 ρ 모두 가장 높았습니다. 원척도 R²는 소수의 100% 농가가 좌우해 모든 변환에서 낮습니다.</p>
+  <h3>변수 조합과 하이퍼파라미터 탐색 (log10)</h3>
+  {{rt_tune}}
+  <p>안쪽 CV로 변수 수와 하이퍼파라미터를 모두 고르는 nested 방식은 R² 0.24로, 고정 설정보다 오히려 낮았습니다. 학습 fold가 50여 건뿐이라 안쪽 CV의 선택이 흔들리기 때문입니다. 반면 ExtraTrees 설정을 바꾸면 R²가 0.32–0.34 사이에서 거의 변하지 않아, 모델이나 하이퍼파라미터보다 자료 자체가 성능의 한계를 정한다고 판단했습니다. 품종저항성, 노출값, 품종×노출값 상호작용을 강제로 넣어도 개선되지 않았습니다(0.32–0.34).</p>
+  <div class="callout"><p><b>최종 피해도 회귀:</b> log10(감염주율) · 평균순위 상위 7개 변수 · ExtraTrees(잎 최소표본 2, max_features √p). 반복 CV R² 0.29–0.33 (난수 시드에 따라), 기존 logit 모델 0.15의 약 2배.</p></div>
+  <figure>
+    <div class="legend"><span><i style="background:var(--up)"></i>값이 클수록 피해↑</span><span><i style="background:var(--down)"></i>값이 클수록 피해↓</span><span><i style="background:var(--flat)"></i>비단조</span></div>
+    {{rt_bar}}
+    <figcaption>최종 log10 모델의 mean|SHAP| (단위: log10 감염주율, 0.2 ≈ 1.6배).</figcaption>
+  </figure>
+  <h3>성능을 떨어뜨리는 농가</h3>
+  <p>최종 모델의 반복 CV(10회) out-of-fold 예측에서 오차제곱합(SSE) 기여가 큰 순서입니다. 반복 평균 R²는 {{rt_r2}}입니다.</p>
+  {{rt_rows}}
+  <ul class="key">
+    <li><b>과소예측(실제가 훨씬 심함):</b> Y25M062는 고저항성 품종, 이환과 즉시 제거, 늦은 초발(DOY 215), 보호살균제 3회로 모든 변수가 "피해 작음"을 가리키는데 100% 피해입니다. 입력 오류가 아닌지 가장 먼저 확인할 농가입니다. Y25M104·Y25M060-1은 감수성 품종에 노출값 1.0이어서 피해가 큰 것이 설명되지만, 이 두 변수의 효과가 다른 농가에서는 일관되지 않아 모델이 쓰지 못했습니다. Y25M018·Y25M013·Y25M047은 노출값이 0.01–0.03으로 최저인데도 35–63% 피해였습니다.</li>
+    <li><b>과대예측(실제가 훨씬 가벼움):</b> Y25M127-1, Y25M061-1, Y26M013, Y26M013-2, Y25M005-1, Y25M037 등은 감염주가 1–3주(0.4–1.2%)뿐입니다. 이 수준에서는 한두 주 차이가 log 척도에서 큰 차이가 되어 측정 잡음이 커집니다. Y25M127-1·Y25M061-1은 같은 농가의 다른 포장이 12–15% 피해인데 이 포장만 1% 수준이어서, 농가 단위 변수로는 구분할 수 없습니다.</li>
+    <li><b>같은 농가 안의 큰 차이:</b> Y25O013 농가는 같은 기상·방제에서 포장별 피해가 25%, 97.5%, 50%였고, Y25M060은 30%와 100%였습니다. 포장 단위 정보(위치, 배수, 품종 외 관리 차이)가 없으면 이런 차이는 설명되지 않습니다.</li>
+  </ul>
+  <h3>문제 농가를 뺐을 때 (학습·평가 모두에서 제외)</h3>
+  {{rt_sens}}
+  <p class="note">상위 6개 농가만 빼도 R²가 약 0.48로 오릅니다. 다만 이것은 성능 개선이 아니라 민감도 분석입니다. 근거 없이 이 농가들을 빼면 실제 현장의 변동을 숨기게 되므로, 설문 원자료에서 입력 오류가 확인된 경우에만 수정·제외하는 것을 권합니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">08</span>해석할 때 주의할 점</h2>
   <ul class="key">
     <li>설문 기반 관찰자료이므로 효과는 연관성입니다. 특히 방제 변수는 발생 위험이 높은 농가가 더 많이 뿌린 결과일 수도 있습니다.</li>
     <li>7~8월 사후지연·사전경과 최대값은 무방제 농가에서 관측 기간 끝까지의 일수(36–45일)로 잘려 있어, 이 변수의 위험 효과에는 "무방제" 효과가 섞여 있습니다.</li>
@@ -197,7 +225,7 @@ pre { font-family: var(--f-mono); font-size: 12.5px; background: var(--surface);
 </section>
 
 <section>
-  <h2><span class="no">08</span>재현 방법</h2>
+  <h2><span class="no">09</span>재현 방법</h2>
   <p>코드는 저장소 <code>anthracnose_ml/</code>에 있습니다. 각 단계의 결과는 <code>results/</code>에 저장됩니다.</p>
 <pre>python run_selection.py  data.xlsx cls|reg|sev3 results          # 1. 변수세트 × 모델 × k
 python run_selection2.py data.xlsx cls B results                  # 2. 선택방법 비교 (sev3 A, reg A)
@@ -206,6 +234,9 @@ python run_final.py      data.xlsx sev3 A meanrank 7 XGB results
 python run_final.py      data.xlsx reg A meanrank 10 ET_l3 results
 python run_effects.py    data.xlsx results                        # 4. 오즈비
 python run_hurdle.py     data.xlsx B rfe 20 ET_l3 meanrank 10 ET_l3 results
+python run_reg_tune.py   data.xlsx A results A                # 피해도 회귀: 변환 비교
+python run_reg_tune.py   data.xlsx B results log10 A          #   nested 튜닝 (C: 최적 부분집합)
+python run_reg_diag.py   data.xlsx log10 A 7 ET_tuned results # 문제 농가 진단
 python make_report.py    data.xlsx results report.html</pre>
 </section>
 </div>

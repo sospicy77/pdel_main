@@ -218,8 +218,39 @@ def main(xlsx, rd, out):
     else:
         hwin = None
 
+    # 피해도 회귀 개선 (run_reg_tune / run_reg_diag)
+    ta = pd.read_csv(f"{rd}/regtune_A_A.csv")
+    tlab = {"logit": "logit (기존)", "log10": "log10", "sqrt": "제곱근", "asin": "arcsine √", "raw": "원값"}
+    t_tr = pd.DataFrame([[tlab[t], g.iloc[0].model, g.iloc[0].k, f'{g.iloc[0].R2_t_mean:.3f}',
+                          f'{g.iloc[0].R2_raw_mean:.3f}', f'{g.iloc[0].rho_mean:.3f}']
+                         for t, g in ta.groupby("transform", sort=False)],
+                        columns=["변환", "최고 모델", "k", "R² (변환 척도)", "R² (원척도)", "Spearman ρ"])
+    tb = pd.read_csv(f"{rd}/regtune_B_log10_A.csv", index_col=0)
+    tc = pd.read_csv(f"{rd}/regtune_C_log10_A.csv", index_col=0)
+    grid = [l.rsplit(") ", 1) for l in open(f"{rd}/regtune_etgrid.txt").read().splitlines()]
+    grid = sorted(grid, key=lambda g: -float(g[1].split()[0]))
+    tune_rows = [["nested 튜닝 (k·하이퍼파라미터 모두 안쪽 CV)", m, f'{tb.loc[m, "R2_t_mean"]:.3f} ± {tb.loc[m, "R2_t_std"]:.3f}']
+                 for m in tb.sort_values("R2_t_mean", ascending=False).index]
+    tune_rows += [["최적 부분집합 (PRESS 최소, 후보 14개 중 ≤6개)", m, f'{tc.loc[m, "R2_t_mean"]:.3f} ± {tc.loc[m, "R2_t_std"]:.3f}']
+                  for m in tc.index]
+    tune_rows += [["ExtraTrees 격자 탐색 (k, 잎 최소표본, max_features)", f"{g[0]})", g[1]] for g in grid[:3]]
+    t_tune = pd.DataFrame(tune_rows, columns=["방식", "모델 / 설정", "R² (log10, 평균 ± SD)"])
+    imp_f = pd.read_csv(f"{rd}/regfinal_log10_importance.csv", index_col=0)
+    rt_bar = bar_chart([{"var": v, "shap": r.mean_abs_shap, "rho": r.rho} for v, r in imp_f.iterrows()], "shap")
+    rows_d = pd.read_csv(f"{rd}/regdiag_log10_A_rows.csv").head(15)
+    t_rows = table(pd.DataFrame([[i + 1, r.ID, f"{r.피해도:.4f}", int(r.발병주수), f"{r.예측_피해도:.3f}",
+                                  f"{r.잔차:+.2f}", f"{r.SSE기여율*100:.1f}%", r.방향.split("(")[0],
+                                  r.같은농가_피해도범위] for i, r in enumerate(rows_d.itertuples())],
+                                columns=["순위", "ID", "실제 피해도", "발병주수", "예측 피해도", "잔차 (log10)",
+                                         "SSE 기여", "유형", "같은 농가 피해도 범위"]), "num")
+    dg = json.load(open(f"{rd}/regdiag_log10_A.json"))
+    t_sens = table(pd.DataFrame([[s["제외_농가수"], f'{s["R2"]:.3f}', s["제외_ID"] or "-"] for s in dg["sensitivity"]],
+                                columns=["제외 농가 수", "R² (log10)", "제외한 ID (SSE 기여 순)"]), "num")
+
     n1 = int(d[C.Y1].sum())
     fill = dict(
+        rt_transform=table(t_tr, "num"), rt_tune=table(t_tune, "num"), rt_bar=rt_bar,
+        rt_rows=t_rows, rt_sens=t_sens, rt_r2=f'{dg["R2_mean"]:.3f}',
         n=len(d), n1=n1, n0=len(d) - n1,
         auc_nested="0.772", auc_fixed=f'{perf["cls"]["AUC"]["mean"]:.3f}',
         acc_nested="0.642", rho_sev_nested="0.617", acc_fixed=f'{perf["sev3"]["acc3"]["mean"]:.3f}',
