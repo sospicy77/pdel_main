@@ -1,0 +1,211 @@
+<title>고추탄저병 영향요인 분석</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 연구 보고서형 단일 컬럼. 숫자는 고정폭, 효과 방향은 적(위험↑)·청(위험↓) 발산 쌍 */
+:root {
+  --bg: #f7f8f6; --surface: #ffffff; --fg: #1b1f1c; --muted: #5a625c; --line: #dde2dc;
+  --accent: #2f6b3f; --accent-soft: #e5efe7;
+  --up: #d23f3e; --down: #2a78d6; --flat: #9aa29c;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141715; --surface: #1c201d; --fg: #e9ece9; --muted: #a3aba5; --line: #323833;
+  --accent: #7cc08d; --accent-soft: #223127;
+  --up: #e66767; --down: #3987e5; --flat: #6f7771;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #141715; --surface: #1c201d; --fg: #e9ece9; --muted: #a3aba5; --line: #323833;
+  --accent: #7cc08d; --accent-soft: #223127;
+  --up: #e66767; --down: #3987e5; --flat: #6f7771;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.7; }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 40px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: grid; gap: 6px; padding-bottom: 24px; border-bottom: 2px solid var(--fg); }
+.eyebrow { font-size: 12px; letter-spacing: .08em; color: var(--accent); font-weight: 700; }
+h1 { font-size: 30px; line-height: 1.3; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; }
+h2 { font-size: 21px; margin: 0; text-wrap: balance; display: flex; gap: 10px; align-items: baseline; }
+h2 .no { font-family: var(--f-mono); font-size: 14px; color: var(--accent); }
+h3 { font-size: 16px; margin: 8px 0 0; }
+section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding-top: 40px; }
+p { margin: 0; max-width: 68ch; }
+.note { font-size: 13px; color: var(--muted); }
+ul.key { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 70ch; }
+b.up { color: var(--up); } b.down { color: var(--down); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.stat .k { font-size: 12px; color: var(--muted); letter-spacing: .03em; }
+.stat .v { font-family: var(--f-mono); font-size: 28px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.stat .d { font-size: 12.5px; color: var(--muted); }
+.callout { background: var(--accent-soft); border-radius: 6px; padding: 14px 16px; display: grid; gap: 6px; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-weight: 500; color: var(--muted); font-size: 12.5px; }
+table.num td { font-variant-numeric: tabular-nums; }
+figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: grid; gap: 8px; min-width: 0; overflow-x: auto; }
+figcaption { font-size: 13px; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.chart { width: 100%; min-width: 520px; height: auto; display: block; }
+.chart.small { min-width: 0; }
+.chart text { font-family: var(--f-body); fill: var(--fg); }
+.chart .tick { font-size: 11px; fill: var(--muted); font-family: var(--f-mono); }
+.chart .lab { font-size: 12px; }
+.chart .lab.strong { font-weight: 700; }
+.chart .val { font-size: 11.5px; fill: var(--muted); font-family: var(--f-mono); }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .ref { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart .hit { fill: transparent; }
+.chart .mark:hover .hit { fill: var(--accent-soft); }
+.bar.up, .pt.up, .pt2.up { fill: var(--up); } .bar.down, .pt.down, .pt2.down { fill: var(--down); } .bar.flat, .pt.flat { fill: var(--flat); }
+.pt2 { opacity: .75; stroke: var(--surface); stroke-width: 1; }
+.ci { stroke-width: 2; } .ci.up { stroke: var(--up); } .ci.down { stroke: var(--down); } .ci.flat { stroke: var(--flat); }
+.line { fill: none; stroke-width: 2; } .line.s1 { stroke: var(--s1); } .line.s2 { stroke: var(--s2); } .line.s3 { stroke: var(--s3); }
+.dot { stroke: var(--surface); stroke-width: 2; } .dot.s1 { fill: var(--s1); } .dot.s2 { fill: var(--s2); } .dot.s3 { fill: var(--s3); }
+.deps { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.dep { padding: 8px; }
+ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 70ch; }
+code { font-family: var(--f-mono); font-size: 12.5px; background: var(--accent-soft); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: var(--f-mono); font-size: 12.5px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; margin: 0; }
+@media (max-width: 640px) { .stats { grid-template-columns: 1fr; } h1 { font-size: 24px; } }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">고추탄저병 설문 · ML 영향요인 분석</div>
+  <h1>무엇이 탄저병 발생과 피해를 좌우했나</h1>
+  <p class="sub">농가 {{n}}곳 (발생 {{n1}} · 미발생 {{n0}}) · 설명변수 최대 48개 · 반복 5-fold 교차검증</p>
+</header>
+
+<section>
+  <h2><span class="no">요약</span>핵심 결과</h2>
+  <div class="stats">
+    <div class="stat"><span class="k">발생 여부 (150건)</span><span class="v">AUC {{auc_nested}}</span><span class="d">ExtraTrees · 변수 20개 · 기상 포함 세트</span></div>
+    <div class="stat"><span class="k">피해도 3단계 (발병 67건)</span><span class="v">{{acc_nested}}</span><span class="d">3단계 정확도 (우연 수준 약 0.46) · ρ {{rho_sev_nested}}</span></div>
+    <div class="stat"><span class="k">피해도 연속값 (발병 67건)</span><span class="v">R² {{r2_nested}}</span><span class="d">logit(감염주율) 회귀 · 변수 10개</span></div>
+  </div>
+  <p class="note">위 수치는 변수 선택까지 각 학습 fold 안에서 수행한 정직한 추정치입니다. 선택된 변수를 고정하고 다시 잰 값은 AUC {{auc_fixed}}, 정확도 {{acc_fixed}}, R² {{r2_fixed}}으로 조금 더 높지만 낙관적입니다.</p>
+  <ul class="key">
+    <li><b>발생</b>은 기상 조건이 가장 크게 좌우했습니다. <b class="up">7~8월 누적강수량</b>이 약 140 mm를 넘으면 발생 위험이 올라가고(발생률 120 mm 이하 23% → 120 mm 초과 54%), <b class="up">6월 평균기온</b>이 높을수록, <b class="up">노출값</b>(정식~조사일 severity potential)이 높을수록 위험이 커졌습니다.</li>
+    <li>농가 요인으로는 <b class="up">작년 탄저 발생</b>(발생률 37% → 56%)이 위험을 높였고 <b class="down">제초매트 사용</b>(52% → 38%)이 위험을 낮췄습니다. 방제 쪽에서는 <b class="up">강우 후 방제까지 지연이 긴 농가</b>(7~8월 사후지연 최대 20일 초과 시 62%)와 무방제 농가(68%)의 발생률이 높았습니다.</li>
+    <li><b>피해 정도</b>는 발병 이후 정보가 대부분을 설명했습니다. <b class="down">초발이 늦을수록</b>(1 SD=10.7일 늦을 때 한 단계 더 심해질 오즈 0.21배), <b class="down">이환과를 바로 솎아내는 농가</b>(0.16배)는 피해가 작았고, <b class="up">작년 발생 농가</b>(5.5배)는 피해가 컸습니다. 보호살균제(카) 살포 횟수가 많을수록 피해가 작아지는 경향(0.48배, p=0.06)도 보였습니다.</li>
+    <li>피해도 연속값 회귀는 설명력이 낮아(R² 0.15), 사용자 제안대로 <b>3단계 범주(경 &lt;2% · 중 2~20% · 심 ≥20%)</b> 모델을 피해도의 주 모델로 삼았습니다. 150건 전체 피해도를 바로 예측하는 허들 모형은 단일 회귀보다 원척도 R²는 높았으나(0.11 vs 0.07) 순위 예측력은 비슷하거나 낮았습니다.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="no">01</span>분석 설계</h2>
+  <ol class="steps">
+    <li><b>변수 세트 비교</b> — A: 변수사전 v7 (기상·IR 제외) + 노출값, A_bin: 노출값을 4등급(&lt;0.05 / 0.05–0.5 / 0.5–0.95 / ≥0.95)으로, B: A + 기상 8개 + IR면적 2개. 발생 분류에는 초발_DOY·정식_초발_경과일·이환과_즉시제거를 쓰지 않았습니다.</li>
+    <li><b>변수 선택 방법 비교</b> — 평균순위(RF·XGB SHAP + 정규화 선형계수), RF-SHAP 순위, RF 재귀적 제거(RFE), Boruta. 선택은 항상 학습 fold 안에서만 하고 상위 k개(3–전체)로 다시 학습해 성능을 쟀습니다.</li>
+    <li><b>모델</b> — 정규화 로지스틱/ElasticNet, Random Forest(3가지 설정), ExtraTrees, XGBoost. 검증은 5-fold × 6회 반복(최종 모델은 10회).</li>
+    <li><b>해석</b> — 최종 모델의 SHAP(크기·방향), fold 밖 permutation 중요도, 부트스트랩 40회 선택 안정성, 그리고 상관이 낮은 핵심 변수로 적합한 로지스틱·순서형 로지스틱의 오즈비.</li>
+  </ol>
+  <p class="note">사용자 지침에 따라 연도·M/O 구분은 쓰지 않았고, 같은 농가그룹의 포장도 독립된 관측으로 다뤘습니다. 피해도는 0과 1을 다룰 수 있도록 Smithson–Verkuilen 압축 후 logit 변환했습니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">02</span>변수 세트 비교</h2>
+  <p>과제별로 가장 좋은 모델·k 조합의 교차검증 성능입니다. 발생 분류는 기상 포함 세트 B가, 피해도는 v7 세트 A가 가장 좋아 각각 그 세트를 택했습니다. 노출값을 등급화해도 이득은 거의 없었습니다.</p>
+  {{t_sets}}
+</section>
+
+<section>
+  <h2><span class="no">03</span>변수 선택과 성능</h2>
+  <figure>
+    <div class="legend"><span><i style="background:var(--s1)"></i>평균순위</span><span><i style="background:var(--s2)"></i>RF-RFE</span><span><i style="background:var(--s3)"></i>RF-SHAP</span></div>
+    {{curve}}
+    <figcaption>발생 분류(세트 B): 선택 방법별로 각 k에서 가장 좋은 모델의 교차검증 AUC. 변수가 20개 안팎이 될 때까지 성능이 오르고 그 뒤로는 평탄합니다. Boruta는 고르는 변수가 너무 적어 AUC {{boruta}}에 그쳤습니다.</figcaption>
+  </figure>
+  <p>RFE + ExtraTrees의 변수 20개 모델(AUC 0.772)은 변수 45개를 모두 쓴 최고 모델(0.773)과 사실상 같은 성능이어서, 변수를 절반 이하로 줄인 이 모델을 최종으로 정했습니다. 피해도 쪽은 변수를 7~10개로 줄였을 때 가장 좋았습니다.</p>
+  {{t_sel}}
+</section>
+
+<section>
+  <h2><span class="no">04</span>발생에 영향을 준 변수</h2>
+  <figure>
+    <div class="legend"><span><i style="background:var(--up)"></i>값이 클수록 발생 위험↑</span><span><i style="background:var(--down)"></i>값이 클수록 발생 위험↓</span><span><i style="background:var(--flat)"></i>비단조</span></div>
+    {{cls_bar}}
+    <figcaption>최종 모델(ExtraTrees, 변수 {{cls_k}}개)의 mean|SHAP| = 발생 확률을 평균 몇 %p 움직이는지. 색과 표의 방향(값이 커질 때 발생 확률이 증가/감소)은 변수값과 SHAP의 순위상관으로 정했습니다.</figcaption>
+  </figure>
+  {{cls_tbl}}
+  <p class="note">Permutation ΔAUC는 fold 밖 자료에서 그 변수를 섞었을 때 AUC가 떨어지는 정도입니다. 서로 상관이 높은 기상 변수(평균기온, 상대습도, IR면적 등)는 중요도를 나눠 가지므로 개별 값이 작게 나올 수 있습니다. 부트스트랩 선택률은 표본을 다시 뽑아 변수 선택을 반복했을 때 상위 20개에 든 비율입니다.</p>
+
+  <h3>값에 따라 위험이 어떻게 바뀌나 (SHAP 의존도, 상위 6개)</h3>
+  <div class="deps">{{deps}}</div>
+  <p class="note">점 하나가 농가 하나입니다. 가로축은 변수값, 세로축은 그 변수가 발생 확률에 더한 기여(점선 위 = 위험↑). 7~8월 누적강수량은 약 140 mm, 6월 평균기온은 약 21–22 ℃에서 기여의 부호가 바뀌었고, 노출값은 0.9 이상 구간에서만 위험을 뚜렷이 올렸습니다.</p>
+
+  <h3>정량적 효과 크기 (핵심 9개 변수 로지스틱 회귀)</h3>
+  <p>최종 모델의 변수 중 서로 상관이 큰 것(평균기온 2개, 상대습도, IR면적, 살포일수 계열)은 군집별 대표 하나만 남겨 VIF를 2 미만으로 낮춘 뒤 오즈비를 추정했습니다. 연속형은 1 SD 증가당, 이진형은 해당(1) vs 비해당(0)입니다.</p>
+  <figure>
+    <div class="legend"><span><i style="background:var(--up)"></i>95% CI가 1보다 큼</span><span><i style="background:var(--down)"></i>95% CI가 1보다 작음</span><span><i style="background:var(--flat)"></i>CI가 1을 포함</span></div>
+    {{cls_forest}}
+    <figcaption>발생 오즈비(로그축), * p &lt; 0.05. McFadden pseudo-R² {{cls_r2}}, 같은 9개 변수 로지스틱의 교차검증 AUC {{cls_core_auc}}.</figcaption>
+  </figure>
+  {{cls_or}}
+</section>
+
+<section>
+  <h2><span class="no">05</span>피해 정도에 영향을 준 변수</h2>
+  <p>발병 농가 67건 ({{sev_counts}}). 초발 관련 3개 변수를 포함했습니다.</p>
+  <h3>피해도 3단계 모델 (XGBoost, 변수 7개)</h3>
+  <figure>
+    <div class="legend"><span><i style="background:var(--up)"></i>값이 클수록 피해↑</span><span><i style="background:var(--down)"></i>값이 클수록 피해↓</span><span><i style="background:var(--flat)"></i>비단조</span></div>
+    {{sev_bar}}
+    <figcaption>mean|SHAP| (단위: 피해 단계 점수 0–2). 추비 횟수는 중요하지만 방향이 비단조입니다. 추비 0회와 3회 이상 농가는 피해가 컸고 1회 농가는 작았습니다.</figcaption>
+  </figure>
+  {{sev_tbl}}
+  <figure>
+    <div class="legend"><span><i style="background:var(--up)"></i>CI &gt; 1</span><span><i style="background:var(--down)"></i>CI &lt; 1</span><span><i style="background:var(--flat)"></i>CI가 1을 포함</span></div>
+    {{sev_forest}}
+    <figcaption>비례오즈 순서형 로지스틱: 한 단계 더 심한 피해로 갈 오즈비(로그축), * p &lt; 0.05.</figcaption>
+  </figure>
+  {{sev_or}}
+
+  <h3>피해도 연속값 회귀 (ExtraTrees, 변수 10개)</h3>
+  <figure>
+    <div class="legend"><span><i style="background:var(--up)"></i>값이 클수록 피해↑</span><span><i style="background:var(--down)"></i>값이 클수록 피해↓</span><span><i style="background:var(--flat)"></i>비단조</span></div>
+    {{reg_bar}}
+    <figcaption>mean|SHAP| (단위: logit 감염주율).</figcaption>
+  </figure>
+  {{reg_tbl}}
+  <p class="note">연속값 회귀가 고른 변수와 방향은 3단계 모델과 같습니다(초발 시기, 이환과 제거, 작년 발생, 보호살균제). 다만 감염주율이 0.4%에서 100%까지 넓게 흩어져 있고 표본이 67건이라 설명력이 낮습니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">06</span>허들 모형: 150건 전체 피해도</h2>
+  <p>예측 피해도 = P(발생 | x) × E[피해도 | 발생, x]. 미발생 농가에는 초발 정보가 없으므로, 새 농가를 예측하는 허들 모형의 2단계에서는 초발 관련 3개 변수를 쓰지 않았습니다. 비교 대상은 150건 전체의 logit(Y2)를 바로 회귀한 단일 모형입니다.</p>
+  {{hurdle}}
+  <p>허들 모형은 피해가 큰 농가를 더 잘 맞혀 원척도 R²가 높았고, 단일 회귀는 피해가 아주 작은 농가를 0 근처로 예측해 로그척도 R²와 순위상관이 조금 높았습니다. 초발 정보 없이 2단계(발병 농가의 피해도)만 보면 순위상관이 0.28에 그쳐, <b>발병 전에 피해 크기를 예측하는 것은 어렵고</b> 피해 크기는 초발 시기와 농가의 대응이 크게 좌우한다는 점을 보여 줍니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">07</span>해석할 때 주의할 점</h2>
+  <ul class="key">
+    <li>설문 기반 관찰자료이므로 효과는 연관성입니다. 특히 방제 변수는 발생 위험이 높은 농가가 더 많이 뿌린 결과일 수도 있습니다.</li>
+    <li>7~8월 사후지연·사전경과 최대값은 무방제 농가에서 관측 기간 끝까지의 일수(36–45일)로 잘려 있어, 이 변수의 위험 효과에는 "무방제" 효과가 섞여 있습니다.</li>
+    <li>기상 변수끼리 상관이 매우 높습니다(6월·7~8월 평균기온 ρ 0.91, 노출값과 7~8월 IR면적 ρ 0.87). 개별 변수보다 "강우·고온 다습 노출" 군집으로 읽는 것이 안전합니다.</li>
+    <li>n=150(피해도 67)으로 작아 중요도 순위는 표본에 따라 흔들립니다. 부트스트랩 선택률이 높은 변수(7~8월 누적강수량 100%, 6월 누적강수량 98%, 6월 평균기온·사후지연 95%, 노출값·사전경과 93%)를 더 신뢰할 만합니다.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="no">08</span>재현 방법</h2>
+  <p>코드는 저장소 <code>anthracnose_ml/</code>에 있습니다. 각 단계의 결과는 <code>results/</code>에 저장됩니다.</p>
+<pre>python run_selection.py  data.xlsx cls|reg|sev3 results          # 1. 변수세트 × 모델 × k
+python run_selection2.py data.xlsx cls B results                  # 2. 선택방법 비교 (sev3 A, reg A)
+python run_final.py      data.xlsx cls B rfe 20 ET_l3 results     # 3. 최종 모델·SHAP
+python run_final.py      data.xlsx sev3 A meanrank 7 XGB results
+python run_final.py      data.xlsx reg A meanrank 10 ET_l3 results
+python run_effects.py    data.xlsx results                        # 4. 오즈비
+python run_hurdle.py     data.xlsx B rfe 20 ET_l3 meanrank 10 ET_l3 results
+python make_report.py    data.xlsx results report.html</pre>
+</section>
+</div>

@@ -25,7 +25,7 @@ import common as C  # noqa: E402
 from run_final import fit_pipeline, predict  # noqa: E402
 
 
-def fold(X, y1, y2, tr, te, a, b, seed):
+def fold(X, y1, y2, tr, te, a, seed):
     s1, k1, m1, s2, k2, m2 = a
     c1, mo1 = fit_pipeline(X.iloc[tr], y1[tr], "cls", s1, k1, m1, seed)
     p = predict(mo1, X.iloc[te][c1], "cls")
@@ -51,7 +51,7 @@ def main(path, sname, s1, k1, m1, s2, k2, m2, outdir):
     a = (s1, int(k1), m1, s2, int(k2), m2)
     cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=6, random_state=11)
     splits = list(cv.split(X, y1))
-    res = Parallel(n_jobs=4)(delayed(fold)(X, y1, y2, tr, te, a, b, i)
+    res = Parallel(n_jobs=4)(delayed(fold)(X, y1, y2, tr, te, a, i)
                              for i, (tr, te) in enumerate(splits))
     rows, hurdle_oof = [], np.zeros(len(y2))
     for rep in range(6):
