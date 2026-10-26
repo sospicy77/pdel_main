@@ -1,0 +1,202 @@
+<title>고추탄저병 재분석 v2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 연구 보고서형 단일 컬럼. 숫자는 고정폭, 효과 방향은 적(위험↑)·청(위험↓) 발산 쌍 */
+:root {
+  --bg: #f7f8f6; --surface: #ffffff; --fg: #1b1f1c; --muted: #5a625c; --line: #dde2dc;
+  --accent: #2f6b3f; --accent-soft: #e5efe7;
+  --up: #d23f3e; --down: #2a78d6; --flat: #9aa29c;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141715; --surface: #1c201d; --fg: #e9ece9; --muted: #a3aba5; --line: #323833;
+  --accent: #7cc08d; --accent-soft: #223127;
+  --up: #e66767; --down: #3987e5; --flat: #6f7771;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #141715; --surface: #1c201d; --fg: #e9ece9; --muted: #a3aba5; --line: #323833;
+  --accent: #7cc08d; --accent-soft: #223127;
+  --up: #e66767; --down: #3987e5; --flat: #6f7771;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.7; }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 40px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: grid; gap: 6px; padding-bottom: 24px; border-bottom: 2px solid var(--fg); }
+.eyebrow { font-size: 12px; letter-spacing: .08em; color: var(--accent); font-weight: 700; }
+h1 { font-size: 30px; line-height: 1.3; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; }
+h2 { font-size: 21px; margin: 0; text-wrap: balance; display: flex; gap: 10px; align-items: baseline; }
+h2 .no { font-family: var(--f-mono); font-size: 14px; color: var(--accent); }
+h3 { font-size: 16px; margin: 8px 0 0; }
+section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding-top: 40px; }
+p { margin: 0; max-width: 68ch; }
+.note { font-size: 13px; color: var(--muted); }
+ul.key { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 70ch; }
+b.up { color: var(--up); } b.down { color: var(--down); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.stat .k { font-size: 12px; color: var(--muted); letter-spacing: .03em; }
+.stat .v { font-family: var(--f-mono); font-size: 28px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.stat .d { font-size: 12.5px; color: var(--muted); }
+.callout { background: var(--accent-soft); border-radius: 6px; padding: 14px 16px; display: grid; gap: 6px; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-weight: 500; color: var(--muted); font-size: 12.5px; }
+table.num td { font-variant-numeric: tabular-nums; }
+figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: grid; gap: 8px; min-width: 0; overflow-x: auto; }
+figcaption { font-size: 13px; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.chart { width: 100%; min-width: 520px; height: auto; display: block; }
+.chart.small { min-width: 0; }
+.chart text { font-family: var(--f-body); fill: var(--fg); }
+.chart .tick { font-size: 11px; fill: var(--muted); font-family: var(--f-mono); }
+.chart .lab { font-size: 12px; }
+.chart .lab.strong { font-weight: 700; }
+.chart .val { font-size: 11.5px; fill: var(--muted); font-family: var(--f-mono); }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .ref { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart .hit { fill: transparent; }
+.chart .mark:hover .hit { fill: var(--accent-soft); }
+.bar.up, .pt.up, .pt2.up { fill: var(--up); } .bar.down, .pt.down, .pt2.down { fill: var(--down); } .bar.flat, .pt.flat { fill: var(--flat); }
+.pt2 { opacity: .75; stroke: var(--surface); stroke-width: 1; }
+.ci { stroke-width: 2; } .ci.up { stroke: var(--up); } .ci.down { stroke: var(--down); } .ci.flat { stroke: var(--flat); }
+.line { fill: none; stroke-width: 2; } .line.s1 { stroke: var(--s1); } .line.s2 { stroke: var(--s2); } .line.s3 { stroke: var(--s3); }
+.dot { stroke: var(--surface); stroke-width: 2; } .dot.s1 { fill: var(--s1); } .dot.s2 { fill: var(--s2); } .dot.s3 { fill: var(--s3); }
+.deps { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.dep { padding: 8px; }
+ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 70ch; }
+code { font-family: var(--f-mono); font-size: 12.5px; background: var(--accent-soft); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: var(--f-mono); font-size: 12.5px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; margin: 0; }
+@media (max-width: 640px) { .stats { grid-template-columns: 1fr; } h1 { font-size: 24px; } }
+</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">고추탄저병 설문 · 수정 데이터(v2) 재분석</div>
+  <h1>데이터를 고친 뒤 모델은 얼마나 나아졌나</h1>
+  <p class="sub">농가 142곳 (발생 60 · 미발생 82) · v1과 같은 절차·같은 선택 규칙으로 전체 재분석</p>
+</header>
+
+<section>
+  <h2><span class="no">요약</span>핵심 결과</h2>
+  <div class="stats">
+    <div class="stat"><span class="k">피해도 연속값 · R² (log10)</span><span class="v">0.426</span><span class="d">v1 0.15 (logit) → 0.33 (log10 개선) → v2</span></div>
+    <div class="stat"><span class="k">피해도 3단계 · Spearman ρ</span><span class="v">0.711</span><span class="d">v1 0.617 → v2 · 3단계 정확도 0.64 → 0.70</span></div>
+    <div class="stat"><span class="k">발생 여부 · AUC</span><span class="v">0.734</span><span class="d">v1 0.772 → v2 · 삭제된 행 때문에 하락</span></div>
+  </div>
+  <ul class="key">
+    <li><b>피해도 모델은 크게 좋아졌습니다.</b> 연속값 회귀는 R² 0.33 → 0.43–0.46(CV 시드에 따라), 3단계 분류는 ρ 0.62 → 0.71입니다. 개선의 대부분은 지난 분석에서 지목한 문제 농가 7곳을 삭제한 효과입니다.</li>
+    <li><b>발생 분류는 오히려 AUC가 0.02–0.04 낮아졌습니다.</b> 삭제된 발병 농가 7곳 중 5곳은 v1 모델이 상위 20% 안의 확률로 잘 맞히던 농가여서, 이들이 빠지며 학습 정보가 줄었습니다. 값 수정은 발생 라벨을 바꾸지 않아 영향이 없습니다. 피해도 값만 의심스러운 농가라면 발생 분류에서는 다시 넣는 것을 권합니다.</li>
+    <li><b>값 수정 중 Y25M013은 오히려 성능을 낮췄습니다.</b> 피해도를 0.63 → 0.05로 고쳤지만 발병주수는 126주 그대로여서, 두 값이 서로 맞지 않습니다(다른 농가는 발병주수 ÷ 피해도 ≈ 200). 삭제만 반영한 자료에서 R² 0.50이던 것이 수정 후 0.43으로 내려간 주요 원인입니다.</li>
+    <li><b>남은 성능 저하 요인:</b> 감염주 1주(0.4%)인 Y26M013-2·Y25M037·Y25M005-1과, 이환과를 즉시 제거했는데도 피해가 13–35%인 Y25M103·Y25M018·Y25M060·Y25M108-1·Y25M105, 보호살균제 0회로 피해 47%인 Y25M047입니다. 상위 6곳을 빼면 R²가 0.66까지 오릅니다.</li>
+    <li>영향 변수의 순위와 방향은 v1과 같습니다. 발생은 7~8월 누적강수량·6월 평균기온·노출값·작년 발생(위험↑), 제초매트(위험↓)가, 피해 정도는 이환과 즉시 제거·늦은 초발(피해↓), 작년 발생(피해↑)이 좌우했습니다.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="no">01</span>데이터 변경 내역</h2>
+  <p>v1 대비 8행이 삭제되고 3개 값이 수정되었습니다. 수정: Y25M013 피해도 0.63 → 0.05, Y25M104 피해도 1.00 → 0.30 · 발병주수 114 → 60, Y25M047 보호_카_횟수 1 → 0.</p>
+  <div class="tbl"><table class="num"><thead><tr><th>삭제된 ID</th><th>발생</th><th>피해도</th><th>발병주수</th></tr></thead><tbody><tr><td>Y25M039</td><td>1</td><td>0.0089</td><td>2</td></tr><tr><td>Y25M060-1</td><td>1</td><td>1.0000</td><td>208</td></tr><tr><td>Y25M061-1</td><td>1</td><td>0.0115</td><td>3</td></tr><tr><td>Y25M062</td><td>1</td><td>1.0000</td><td>220</td></tr><tr><td>Y25M127-1</td><td>1</td><td>0.0104</td><td>2</td></tr><tr><td>Y25O013-1</td><td>1</td><td>0.9750</td><td>232</td></tr><tr><td>Y26M013</td><td>1</td><td>0.0036</td><td>1</td></tr><tr><td>Y26M013-1</td><td>0</td><td>0.0000</td><td>0</td></tr></tbody></table></div>
+  <p class="note">Y26M013-1(미발생)은 함께 삭제되었지만, 같은 농가의 Y26M013-2는 남아 있고 현재 가장 큰 오차를 내는 농가입니다. 의도한 것인지 확인이 필요합니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">02</span>성능 비교: 삭제 효과와 수정 효과</h2>
+  <p>같은 파이프라인(변수 선택은 fold 안)과 같은 CV 분할 시드로 세 가지 자료를 비교했습니다. 가운데 열은 8행 삭제만 반영하고 값은 v1 그대로 둔 자료입니다. 왼쪽 → 가운데가 삭제 효과, 가운데 → 오른쪽이 값 수정 효과입니다.</p>
+  <div class="tbl"><table class="num"><thead><tr><th>과제</th><th>지표</th><th>파이프라인</th><th>v1 (150건)</th><th>삭제만 (142건)</th><th>v2 (142건)</th></tr></thead><tbody><tr><td>발생 분류</td><td>AUC</td><td>v1 최종: RFE·ET k=20</td><td>0.756 ± 0.032</td><td>0.735 ± 0.022</td><td>0.735 ± 0.024</td></tr><tr><td>발생 분류</td><td>AUC</td><td>v2 최종: RFE·ET k=25</td><td>0.764 ± 0.026</td><td>0.738 ± 0.022</td><td>0.738 ± 0.022</td></tr><tr><td>피해도 3단계</td><td>Spearman ρ</td><td>v1 최종: 평균순위·XGB k=7</td><td>0.563 ± 0.065</td><td>0.686 ± 0.030</td><td>0.687 ± 0.025</td></tr><tr><td>피해도 3단계</td><td>Spearman ρ</td><td>v2 최종: 평균순위·RF k=5</td><td>0.555 ± 0.060</td><td>0.720 ± 0.033</td><td>0.712 ± 0.016</td></tr><tr><td>피해도 회귀</td><td>R² (logit)</td><td>v1 최종: logit·ET k=10</td><td>0.126 ± 0.038</td><td>0.315 ± 0.019</td><td>0.384 ± 0.019</td></tr><tr><td>피해도 회귀</td><td>R² (log10)</td><td>v1 개선: log10·ET(튜닝) k=7</td><td>0.318 ± 0.053</td><td>0.410 ± 0.011</td><td>0.410 ± 0.026</td></tr><tr><td>피해도 회귀</td><td>R² (log10)</td><td>v2 최종: log10·EN k=3</td><td>0.281 ± 0.036</td><td>0.500 ± 0.016</td><td>0.433 ± 0.028</td></tr></tbody></table></div>
+  <ul class="key">
+    <li><b>발생 분류:</b> 0.756 → 0.735. 하락은 전부 삭제 효과이고 수정 효과는 0입니다.</li>
+    <li><b>피해도 3단계:</b> 0.56 → 0.69–0.72. 대부분 삭제 효과입니다.</li>
+    <li><b>피해도 회귀 (log10):</b> 삭제로 0.28–0.32 → 0.41–0.50으로 크게 오르고, 값 수정 후에는 변수 3개 선형모형이 0.50 → 0.43으로 내려갔습니다. Y25M013의 피해도·발병주수 불일치 때문입니다(06장).</li>
+  </ul>
+  <p class="note">v1 열의 값은 이 표의 CV 시드 기준이라 v1 보고서의 수치와 조금 다를 수 있습니다. n=60–150의 작은 자료라 시드에 따라 ±0.02–0.04 정도 흔들립니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">03</span>발생에 영향을 준 변수 (v2)</h2>
+  <p>v1과 같은 규칙(1단계 최고 변수세트 → 2단계 최고 성능 −0.005 이내에서 변수 수가 가장 적은 설정)으로 고른 최종 모델: RFE · ExtraTrees · 변수 25개 · 세트 B. 기상 포함 세트 B가 이번에도 가장 좋았습니다.</p>
+  <figure>
+    <div class="legend"><span><i style="background:var(--up)"></i>값이 클수록 발생 위험↑</span><span><i style="background:var(--down)"></i>값이 클수록 발생 위험↓</span><span><i style="background:var(--flat)"></i>비단조</span></div>
+    <svg viewBox="0 0 640 418" class="chart" role="img"><line x1="190.0" x2="190.0" y1="0" y2="394" class="grid"/><text x="190.0" y="410" class="tick" text-anchor="middle">0</text><line x1="266.0" x2="266.0" y1="0" y2="394" class="grid"/><text x="266.0" y="410" class="tick" text-anchor="middle">0.01</text><line x1="342.0" x2="342.0" y1="0" y2="394" class="grid"/><text x="342.0" y="410" class="tick" text-anchor="middle">0.02</text><line x1="418.0" x2="418.0" y1="0" y2="394" class="grid"/><text x="418.0" y="410" class="tick" text-anchor="middle">0.03</text><line x1="494.0" x2="494.0" y1="0" y2="394" class="grid"/><text x="494.0" y="410" class="tick" text-anchor="middle">0.04</text><line x1="570.0" x2="570.0" y1="0" y2="394" class="grid"/><text x="570.0" y="410" class="tick" text-anchor="middle">0.05</text><g class="mark"><title>작년_탄저발생: 0.047 · 값↑ → 증가 (ρ=0.81)</title><rect x="0" y="0" width="640" height="26" class="hit"/><text x="182" y="14.0" class="lab" text-anchor="end">작년_탄저발생</text><path d="M190,0 h352.4 q4,0 4,4 v12 q0,4 -4,4 h-352.4 z" class="bar up"/><text x="552.4" y="14.0" class="val">0.047</text></g><g class="mark"><title>제초매트: 0.033 · 값↑ → 감소 (ρ=-0.86)</title><rect x="0" y="26" width="640" height="26" class="hit"/><text x="182" y="40.0" class="lab" text-anchor="end">제초매트</text><path d="M190,26 h244.5 q4,0 4,4 v12 q0,4 -4,4 h-244.5 z" class="bar down"/><text x="444.5" y="40.0" class="val">0.033</text></g><g class="mark"><title>노출값: 0.031 · 값↑ → 증가 (ρ=0.63)</title><rect x="0" y="52" width="640" height="26" class="hit"/><text x="182" y="66.0" class="lab" text-anchor="end">노출값</text><path d="M190,52 h228.6 q4,0 4,4 v12 q0,4 -4,4 h-228.6 z" class="bar up"/><text x="428.6" y="66.0" class="val">0.031</text></g><g class="mark"><title>7~8월_누적강수량: 0.030 · 값↑ → 증가 (ρ=0.90)</title><rect x="0" y="78" width="640" height="26" class="hit"/><text x="182" y="92.0" class="lab" text-anchor="end">7~8월_누적강수량</text><path d="M190,78 h221.7 q4,0 4,4 v12 q0,4 -4,4 h-221.7 z" class="bar up"/><text x="421.7" y="92.0" class="val">0.030</text></g><g class="mark"><title>7~8월_사후지연_최대: 0.021 · 값↑ → 증가 (ρ=0.68)</title><rect x="0" y="104" width="640" height="26" class="hit"/><text x="182" y="118.0" class="lab" text-anchor="end">7~8월_사후지연_최대</text><path d="M190,104 h157.1 q4,0 4,4 v12 q0,4 -4,4 h-157.1 z" class="bar up"/><text x="357.1" y="118.0" class="val">0.021</text></g><g class="mark"><title>6월_평균기온: 0.021 · 값↑ → 증가 (ρ=0.78)</title><rect x="0" y="130" width="640" height="26" class="hit"/><text x="182" y="144.0" class="lab" text-anchor="end">6월_평균기온</text><path d="M190,130 h151.8 q4,0 4,4 v12 q0,4 -4,4 h-151.8 z" class="bar up"/><text x="351.8" y="144.0" class="val">0.021</text></g><g class="mark"><title>7월_살포횟수: 0.019 · 값↑ → 감소 (ρ=-0.29)</title><rect x="0" y="156" width="640" height="26" class="hit"/><text x="182" y="170.0" class="lab" text-anchor="end">7월_살포횟수</text><path d="M190,156 h138.9 q4,0 4,4 v12 q0,4 -4,4 h-138.9 z" class="bar down"/><text x="338.9" y="170.0" class="val">0.019</text></g><g class="mark"><title>살포일수: 0.017 · 값↑ → 감소 (ρ=-0.34)</title><rect x="0" y="182" width="640" height="26" class="hit"/><text x="182" y="196.0" class="lab" text-anchor="end">살포일수</text><path d="M190,182 h121.4 q4,0 4,4 v12 q0,4 -4,4 h-121.4 z" class="bar down"/><text x="321.4" y="196.0" class="val">0.017</text></g><g class="mark"><title>log_성묘개수: 0.015 · 값↑ → 감소 (ρ=-0.83)</title><rect x="0" y="208" width="640" height="26" class="hit"/><text x="182" y="222.0" class="lab" text-anchor="end">log_성묘개수</text><path d="M190,208 h109.2 q4,0 4,4 v12 q0,4 -4,4 h-109.2 z" class="bar down"/><text x="309.2" y="222.0" class="val">0.015</text></g><g class="mark"><title>5월_살포횟수: 0.014 · 값↑ → 감소 (ρ=-0.31)</title><rect x="0" y="234" width="640" height="26" class="hit"/><text x="182" y="248.0" class="lab" text-anchor="end">5월_살포횟수</text><path d="M190,234 h103.9 q4,0 4,4 v12 q0,4 -4,4 h-103.9 z" class="bar down"/><text x="303.9" y="248.0" class="val">0.014</text></g><g class="mark"><title>7~8월_사전경과_최대: 0.014 · 값↑ → 증가 (ρ=0.67)</title><rect x="0" y="260" width="640" height="26" class="hit"/><text x="182" y="274.0" class="lab" text-anchor="end">7~8월_사전경과_최대</text><path d="M190,260 h100.9 q4,0 4,4 v12 q0,4 -4,4 h-100.9 z" class="bar up"/><text x="300.9" y="274.0" class="val">0.014</text></g><g class="mark"><title>보호_카_횟수: 0.013 · 값↑ → 감소 (ρ=-0.40)</title><rect x="0" y="286" width="640" height="26" class="hit"/><text x="182" y="300.0" class="lab" text-anchor="end">보호_카_횟수</text><path d="M190,286 h92.5 q4,0 4,4 v12 q0,4 -4,4 h-92.5 z" class="bar down"/><text x="292.5" y="300.0" class="val">0.013</text></g><g class="mark"><title>7~8월_평균기온: 0.013 · 값↑ → 증가 (ρ=0.55)</title><rect x="0" y="312" width="640" height="26" class="hit"/><text x="182" y="326.0" class="lab" text-anchor="end">7~8월_평균기온</text><path d="M190,312 h92.5 q4,0 4,4 v12 q0,4 -4,4 h-92.5 z" class="bar up"/><text x="292.5" y="326.0" class="val">0.013</text></g><g class="mark"><title>7~8월_강우일수: 0.013 · 값↑ → 증가 (ρ=0.57)</title><rect x="0" y="338" width="640" height="26" class="hit"/><text x="182" y="352.0" class="lab" text-anchor="end">7~8월_강우일수</text><path d="M190,338 h91.8 q4,0 4,4 v12 q0,4 -4,4 h-91.8 z" class="bar up"/><text x="291.8" y="352.0" class="val">0.013</text></g><g class="mark"><title>6월_평균상대습도: 0.010 · 값↑ → 감소 (ρ=-0.45)</title><rect x="0" y="364" width="640" height="26" class="hit"/><text x="182" y="378.0" class="lab" text-anchor="end">6월_평균상대습도</text><path d="M190,364 h72.0 q4,0 4,4 v12 q0,4 -4,4 h-72.0 z" class="bar down"/><text x="272.0" y="378.0" class="val">0.010</text></g></svg>
+    <figcaption>최종 모델의 mean|SHAP| 상위 15개 (발생 확률 단위).</figcaption>
+  </figure>
+  <figure>
+    <div class="legend"><span><i style="background:var(--up)"></i>95% CI &gt; 1</span><span><i style="background:var(--down)"></i>95% CI &lt; 1</span><span><i style="background:var(--flat)"></i>CI가 1을 포함</span></div>
+    <svg viewBox="0 0 640 268" class="chart" role="img"><line x1="195.1" x2="195.1" y1="0" y2="242" class="grid"/><text x="195.1" y="258" class="tick" text-anchor="middle">0.2</text><line x1="299.0" x2="299.0" y1="0" y2="242" class="grid"/><text x="299.0" y="258" class="tick" text-anchor="middle">0.5</text><line x1="377.6" x2="377.6" y1="0" y2="242" class="ref"/><text x="377.6" y="258" class="tick" text-anchor="middle">1</text><line x1="456.3" x2="456.3" y1="0" y2="242" class="grid"/><text x="456.3" y="258" class="tick" text-anchor="middle">2</text><g class="mark"><title>7~8월_누적강수량 (+1SD (86.498)): OR 1.90 [1.15–3.15], p=0.012</title><rect x="0" y="0.0" width="640" height="26" class="hit"/><text x="182" y="17.0" class="lab" text-anchor="end">7~8월_누적강수량</text><line x1="393.4" x2="507.6" y1="13.0" y2="13.0" class="ci up"/><circle cx="450.5" cy="13.0" r="5" class="pt up"/><text x="540" y="17.0" class="val">1.90*</text></g><g class="mark"><title>노출값 (+1SD (0.405)): OR 1.19 [0.74–1.92], p=0.472</title><rect x="0" y="26.0" width="640" height="26" class="hit"/><text x="182" y="43.0" class="lab" text-anchor="end">노출값</text><line x1="343.4" x2="451.5" y1="39.0" y2="39.0" class="ci flat"/><circle cx="397.5" cy="39.0" r="5" class="pt flat"/><text x="540" y="43.0" class="val">1.19</text></g><g class="mark"><title>6월_평균기온 (+1SD (1.345)): OR 2.08 [1.28–3.37], p=0.003</title><rect x="0" y="52.0" width="640" height="26" class="hit"/><text x="182" y="69.0" class="lab" text-anchor="end">6월_평균기온</text><line x1="406.0" x2="515.3" y1="65.0" y2="65.0" class="ci up"/><circle cx="460.7" cy="65.0" r="5" class="pt up"/><text x="540" y="69.0" class="val">2.08*</text></g><g class="mark"><title>7~8월_사후지연_최대 (+1SD (13.957)): OR 1.44 [0.84–2.48], p=0.182</title><rect x="0" y="78.0" width="640" height="26" class="hit"/><text x="182" y="95.0" class="lab" text-anchor="end">7~8월_사후지연_최대</text><line x1="358.1" x2="480.6" y1="91.0" y2="91.0" class="ci flat"/><circle cx="419.3" cy="91.0" r="5" class="pt flat"/><text x="540" y="95.0" class="val">1.44</text></g><g class="mark"><title>7~8월_사전경과_최대 (+1SD (9.212)): OR 1.58 [0.94–2.65], p=0.085</title><rect x="0" y="104.0" width="640" height="26" class="hit"/><text x="182" y="121.0" class="lab" text-anchor="end">7~8월_사전경과_최대</text><line x1="370.5" x2="488.0" y1="117.0" y2="117.0" class="ci flat"/><circle cx="429.2" cy="117.0" r="5" class="pt flat"/><text x="540" y="121.0" class="val">1.58</text></g><g class="mark"><title>작년_탄저발생 (0→1): OR 1.69 [0.74–3.83], p=0.210</title><rect x="0" y="130.0" width="640" height="26" class="hit"/><text x="182" y="147.0" class="lab" text-anchor="end">작년_탄저발생</text><line x1="344.2" x2="530.0" y1="143.0" y2="143.0" class="ci flat"/><circle cx="437.1" cy="143.0" r="5" class="pt flat"/><text x="540" y="147.0" class="val">1.69</text></g><g class="mark"><title>제초매트 (0→1): OR 0.46 [0.19–1.09], p=0.078</title><rect x="0" y="156.0" width="640" height="26" class="hit"/><text x="182" y="173.0" class="lab" text-anchor="end">제초매트</text><line x1="190.0" x2="387.5" y1="169.0" y2="169.0" class="ci flat"/><circle cx="288.8" cy="169.0" r="5" class="pt flat"/><text x="540" y="173.0" class="val">0.46</text></g><g class="mark"><title>log_성묘개수 (+1SD (1.279)): OR 0.81 [0.48–1.37], p=0.430</title><rect x="0" y="182.0" width="640" height="26" class="hit"/><text x="182" y="199.0" class="lab" text-anchor="end">log_성묘개수</text><line x1="294.3" x2="413.1" y1="195.0" y2="195.0" class="ci flat"/><circle cx="353.7" cy="195.0" r="5" class="pt flat"/><text x="540" y="199.0" class="val">0.81</text></g><g class="mark"><title>보호_카_횟수 (+1SD (3.502)): OR 1.25 [0.77–2.05], p=0.364</title><rect x="0" y="208.0" width="640" height="26" class="hit"/><text x="182" y="225.0" class="lab" text-anchor="end">보호_카_횟수</text><line x1="347.9" x2="458.8" y1="221.0" y2="221.0" class="ci flat"/><circle cx="403.4" cy="221.0" r="5" class="pt flat"/><text x="540" y="225.0" class="val">1.25</text></g></svg>
+    <figcaption>v1과 같은 핵심 9개 변수 로지스틱 회귀의 오즈비 (연속형 1 SD당, 이진형 0→1), * p &lt; 0.05. 같은 변수 로지스틱의 CV AUC 0.700.</figcaption>
+  </figure>
+  <div class="tbl"><table class="num"><thead><tr><th>변수</th><th>단위</th><th>OR</th><th>95% CI</th><th>p</th></tr></thead><tbody><tr><td>7~8월_누적강수량</td><td>+1SD (86.498)</td><td>1.90</td><td>1.15–3.15</td><td>0.012</td></tr><tr><td>노출값</td><td>+1SD (0.405)</td><td>1.19</td><td>0.74–1.92</td><td>0.472</td></tr><tr><td>6월_평균기온</td><td>+1SD (1.345)</td><td>2.08</td><td>1.28–3.37</td><td>0.003</td></tr><tr><td>7~8월_사후지연_최대</td><td>+1SD (13.957)</td><td>1.44</td><td>0.84–2.48</td><td>0.182</td></tr><tr><td>7~8월_사전경과_최대</td><td>+1SD (9.212)</td><td>1.58</td><td>0.94–2.65</td><td>0.085</td></tr><tr><td>작년_탄저발생</td><td>0→1</td><td>1.69</td><td>0.74–3.83</td><td>0.210</td></tr><tr><td>제초매트</td><td>0→1</td><td>0.46</td><td>0.19–1.09</td><td>0.078</td></tr><tr><td>log_성묘개수</td><td>+1SD (1.279)</td><td>0.81</td><td>0.48–1.37</td><td>0.430</td></tr><tr><td>보호_카_횟수</td><td>+1SD (3.502)</td><td>1.25</td><td>0.77–2.05</td><td>0.364</td></tr></tbody></table></div>
+  <p>7~8월 누적강수량(OR 1.90)과 6월 평균기온(OR 2.08)만 유의했고, 제초매트(0.46)는 경계 수준이었습니다. v1(1.94, 2.05, 0.45)과 거의 같습니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">04</span>피해도 3단계 (v2)</h2>
+  <p>발병 농가 60건 (경(<2%) 15건 / 중(2~20%) 32건 / 심(≥20%) 13건). 최종 모델: 평균순위 · Random Forest · 변수 5개. 변수 고정 시 3단계 정확도 0.693.</p>
+  <figure>
+    <div class="legend"><span><i style="background:var(--up)"></i>값이 클수록 피해↑</span><span><i style="background:var(--down)"></i>값이 클수록 피해↓</span><span><i style="background:var(--flat)"></i>비단조</span></div>
+    <svg viewBox="0 0 640 158" class="chart" role="img"><line x1="190.0" x2="190.0" y1="0" y2="134" class="grid"/><text x="190.0" y="150" class="tick" text-anchor="middle">0</text><line x1="266.0" x2="266.0" y1="0" y2="134" class="grid"/><text x="266.0" y="150" class="tick" text-anchor="middle">0.05</text><line x1="342.0" x2="342.0" y1="0" y2="134" class="grid"/><text x="342.0" y="150" class="tick" text-anchor="middle">0.1</text><line x1="418.0" x2="418.0" y1="0" y2="134" class="grid"/><text x="418.0" y="150" class="tick" text-anchor="middle">0.15</text><line x1="494.0" x2="494.0" y1="0" y2="134" class="grid"/><text x="494.0" y="150" class="tick" text-anchor="middle">0.2</text><line x1="570.0" x2="570.0" y1="0" y2="134" class="grid"/><text x="570.0" y="150" class="tick" text-anchor="middle">0.25</text><g class="mark"><title>이환과_즉시제거: 0.246 · 값↑ → 감소 (ρ=-0.87)</title><rect x="0" y="0" width="640" height="26" class="hit"/><text x="182" y="14.0" class="lab" text-anchor="end">이환과_즉시제거</text><path d="M190,0 h369.3 q4,0 4,4 v12 q0,4 -4,4 h-369.3 z" class="bar down"/><text x="569.3" y="14.0" class="val">0.246</text></g><g class="mark"><title>초발_DOY: 0.193 · 값↑ → 감소 (ρ=-0.87)</title><rect x="0" y="26" width="640" height="26" class="hit"/><text x="182" y="40.0" class="lab" text-anchor="end">초발_DOY</text><path d="M190,26 h288.6 q4,0 4,4 v12 q0,4 -4,4 h-288.6 z" class="bar down"/><text x="488.6" y="40.0" class="val">0.193</text></g><g class="mark"><title>정식_초발_경과일: 0.150 · 값↑ → 감소 (ρ=-0.79)</title><rect x="0" y="52" width="640" height="26" class="hit"/><text x="182" y="66.0" class="lab" text-anchor="end">정식_초발_경과일</text><path d="M190,52 h223.7 q4,0 4,4 v12 q0,4 -4,4 h-223.7 z" class="bar down"/><text x="423.7" y="66.0" class="val">0.150</text></g><g class="mark"><title>보호_카_횟수: 0.093 · 값↑ → 감소 (ρ=-0.70)</title><rect x="0" y="78" width="640" height="26" class="hit"/><text x="182" y="92.0" class="lab" text-anchor="end">보호_카_횟수</text><path d="M190,78 h136.9 q4,0 4,4 v12 q0,4 -4,4 h-136.9 z" class="bar down"/><text x="336.9" y="92.0" class="val">0.093</text></g><g class="mark"><title>작년_탄저발생: 0.064 · 값↑ → 증가 (ρ=0.86)</title><rect x="0" y="104" width="640" height="26" class="hit"/><text x="182" y="118.0" class="lab" text-anchor="end">작년_탄저발생</text><path d="M190,104 h93.7 q4,0 4,4 v12 q0,4 -4,4 h-93.7 z" class="bar up"/><text x="293.7" y="118.0" class="val">0.064</text></g></svg>
+    <figcaption>mean|SHAP| (피해 단계 점수 0–2).</figcaption>
+  </figure>
+  <figure>
+    <div class="legend"><span><i style="background:var(--up)"></i>95% CI &gt; 1</span><span><i style="background:var(--down)"></i>95% CI &lt; 1</span><span><i style="background:var(--flat)"></i>CI가 1을 포함</span></div>
+    <svg viewBox="0 0 640 216" class="chart" role="img"><line x1="263.1" x2="263.1" y1="0" y2="190" class="grid"/><text x="263.1" y="206" class="tick" text-anchor="middle">0.05</text><line x1="291.6" x2="291.6" y1="0" y2="190" class="grid"/><text x="291.6" y="206" class="tick" text-anchor="middle">0.1</text><line x1="320.2" x2="320.2" y1="0" y2="190" class="grid"/><text x="320.2" y="206" class="tick" text-anchor="middle">0.2</text><line x1="358.0" x2="358.0" y1="0" y2="190" class="grid"/><text x="358.0" y="206" class="tick" text-anchor="middle">0.5</text><line x1="386.6" x2="386.6" y1="0" y2="190" class="ref"/><text x="386.6" y="206" class="tick" text-anchor="middle">1</text><line x1="415.2" x2="415.2" y1="0" y2="190" class="grid"/><text x="415.2" y="206" class="tick" text-anchor="middle">2</text><line x1="452.9" x2="452.9" y1="0" y2="190" class="grid"/><text x="452.9" y="206" class="tick" text-anchor="middle">5</text><line x1="481.5" x2="481.5" y1="0" y2="190" class="grid"/><text x="481.5" y="206" class="tick" text-anchor="middle">10</text><line x1="510.1" x2="510.1" y1="0" y2="190" class="grid"/><text x="510.1" y="206" class="tick" text-anchor="middle">20</text><g class="mark"><title>초발_DOY (+1SD (10.807)): OR 0.17 [0.05–0.62], p=0.007</title><rect x="0" y="0.0" width="640" height="26" class="hit"/><text x="182" y="17.0" class="lab" text-anchor="end">초발_DOY</text><line x1="258.9" x2="366.8" y1="13.0" y2="13.0" class="ci down"/><circle cx="312.8" cy="13.0" r="5" class="pt down"/><text x="540" y="17.0" class="val">0.17*</text></g><g class="mark"><title>이환과_즉시제거 (0→1): OR 0.05 [0.01–0.31], p=0.001</title><rect x="0" y="26.0" width="640" height="26" class="hit"/><text x="182" y="43.0" class="lab" text-anchor="end">이환과_즉시제거</text><line x1="190.0" x2="338.3" y1="39.0" y2="39.0" class="ci down"/><circle cx="264.2" cy="39.0" r="5" class="pt down"/><text x="540" y="43.0" class="val">0.05*</text></g><g class="mark"><title>추비_횟수 (+1SD (2.6)): OR 2.17 [1.02–4.59], p=0.043</title><rect x="0" y="52.0" width="640" height="26" class="hit"/><text x="182" y="69.0" class="lab" text-anchor="end">추비_횟수</text><line x1="387.6" x2="449.4" y1="65.0" y2="65.0" class="ci up"/><circle cx="418.5" cy="65.0" r="5" class="pt up"/><text x="540" y="69.0" class="val">2.17*</text></g><g class="mark"><title>작년_탄저발생 (0→1): OR 6.79 [1.42–32.41], p=0.016</title><rect x="0" y="78.0" width="640" height="26" class="hit"/><text x="182" y="95.0" class="lab" text-anchor="end">작년_탄저발생</text><line x1="401.1" x2="530.0" y1="91.0" y2="91.0" class="ci up"/><circle cx="465.5" cy="91.0" r="5" class="pt up"/><text x="540" y="95.0" class="val">6.79*</text></g><g class="mark"><title>보호_카_횟수 (+1SD (3.648)): OR 0.43 [0.17–1.07], p=0.071</title><rect x="0" y="104.0" width="640" height="26" class="hit"/><text x="182" y="121.0" class="lab" text-anchor="end">보호_카_횟수</text><line x1="313.4" x2="389.5" y1="117.0" y2="117.0" class="ci flat"/><circle cx="351.4" cy="117.0" r="5" class="pt flat"/><text x="540" y="121.0" class="val">0.43</text></g><g class="mark"><title>정식_초발_경과일 (+1SD (13.767)): OR 0.70 [0.20–2.52], p=0.590</title><rect x="0" y="130.0" width="640" height="26" class="hit"/><text x="182" y="147.0" class="lab" text-anchor="end">정식_초발_경과일</text><line x1="319.5" x2="424.7" y1="143.0" y2="143.0" class="ci flat"/><circle cx="372.1" cy="143.0" r="5" class="pt flat"/><text x="540" y="147.0" class="val">0.70</text></g><g class="mark"><title>7~8월_사전경과_최대 (+1SD (11.11)): OR 1.32 [0.58–3.00], p=0.504</title><rect x="0" y="156.0" width="640" height="26" class="hit"/><text x="182" y="173.0" class="lab" text-anchor="end">7~8월_사전경과_최대</text><line x1="364.3" x2="431.9" y1="169.0" y2="169.0" class="ci flat"/><circle cx="398.1" cy="169.0" r="5" class="pt flat"/><text x="540" y="173.0" class="val">1.32</text></g></svg>
+    <figcaption>비례오즈 순서형 로지스틱: 한 단계 더 심해질 오즈비, * p &lt; 0.05.</figcaption>
+  </figure>
+  <div class="tbl"><table class="num"><thead><tr><th>변수</th><th>단위</th><th>OR</th><th>95% CI</th><th>p</th></tr></thead><tbody><tr><td>초발_DOY</td><td>+1SD (10.807)</td><td>0.17</td><td>0.05–0.62</td><td>0.007</td></tr><tr><td>이환과_즉시제거</td><td>0→1</td><td>0.05</td><td>0.01–0.31</td><td>0.001</td></tr><tr><td>추비_횟수</td><td>+1SD (2.6)</td><td>2.17</td><td>1.02–4.59</td><td>0.043</td></tr><tr><td>작년_탄저발생</td><td>0→1</td><td>6.79</td><td>1.42–32.41</td><td>0.016</td></tr><tr><td>보호_카_횟수</td><td>+1SD (3.648)</td><td>0.43</td><td>0.17–1.07</td><td>0.071</td></tr><tr><td>정식_초발_경과일</td><td>+1SD (13.767)</td><td>0.70</td><td>0.20–2.52</td><td>0.590</td></tr><tr><td>7~8월_사전경과_최대</td><td>+1SD (11.11)</td><td>1.32</td><td>0.58–3.00</td><td>0.504</td></tr></tbody></table></div>
+  <p>이환과 즉시 제거(OR 0.05), 늦은 초발(0.17)은 피해를 줄이고 작년 발생(6.8)은 키웠습니다. v1보다 효과가 더 뚜렷해졌고, 추비 횟수(2.17)도 유의해졌습니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">05</span>피해도 연속값 회귀 (v2)</h2>
+  <h3>목표변수 변환 비교</h3>
+  <div class="tbl"><table class="num"><thead><tr><th>변환</th><th>최고 모델</th><th>k</th><th>R² (변환 척도)</th><th>R² (원척도)</th><th>Spearman ρ</th></tr></thead><tbody><tr><td>log10</td><td>EN</td><td>3</td><td>0.457</td><td>0.264</td><td>0.648</td></tr><tr><td>logit</td><td>EN</td><td>3</td><td>0.426</td><td>0.276</td><td>0.634</td></tr><tr><td>제곱근</td><td>ET</td><td>5</td><td>0.379</td><td>0.291</td><td>0.616</td></tr><tr><td>arcsine √</td><td>EN</td><td>3</td><td>0.371</td><td>0.308</td><td>0.641</td></tr><tr><td>원값</td><td>ET</td><td>38</td><td>0.289</td><td>0.289</td><td>0.556</td></tr></tbody></table></div>
+  <p class="note">값 1.0인 농가가 모두 빠져(최댓값 0.55) logit과 log10의 차이가 작아졌습니다. log10이 여전히 가장 좋습니다.</p>
+  <h3>변수 조합·하이퍼파라미터 탐색 (log10)</h3>
+  <div class="tbl"><table class="num"><thead><tr><th>방식</th><th>모델 / 설정</th><th>R² (log10)</th></tr></thead><tbody><tr><td>변환 비교 단계 최고 (평균순위 k, 기본 하이퍼파라미터)</td><td>EN k=3</td><td>0.457 ± 0.029</td></tr><tr><td>nested 튜닝 (k·하이퍼파라미터 모두 안쪽 CV)</td><td>ET</td><td>0.381 ± 0.054</td></tr><tr><td>nested 튜닝 (k·하이퍼파라미터 모두 안쪽 CV)</td><td>Huber</td><td>0.337 ± 0.107</td></tr><tr><td>nested 튜닝 (k·하이퍼파라미터 모두 안쪽 CV)</td><td>XGB</td><td>0.300 ± 0.116</td></tr><tr><td>nested 튜닝 (k·하이퍼파라미터 모두 안쪽 CV)</td><td>SVR</td><td>0.285 ± 0.118</td></tr><tr><td>최적 부분집합 (PRESS 최소)</td><td>Huber</td><td>0.191 ± 0.260</td></tr><tr><td>최적 부분집합 (PRESS 최소)</td><td>OLS</td><td>0.198 ± 0.270</td></tr><tr><td>ExtraTrees 격자 탐색</td><td>(k, 잎, max_features) = (7, 2, 0.5)</td><td>0.439 ± 0.044</td></tr><tr><td>ExtraTrees 격자 탐색</td><td>(k, 잎, max_features) = (10, 2, 0.5)</td><td>0.437 ± 0.047</td></tr></tbody></table></div>
+  <p>이번에는 복잡한 모델보다 <b>변수 3개 ElasticNet</b>이 가장 좋았습니다. 튜닝과 부분집합 탐색은 v1과 마찬가지로 이득이 없었습니다.</p>
+  <div class="callout"><p><b>최종 피해도 회귀 (v2):</b> log10(감염주율) ~ 이환과_즉시제거 + 초발_DOY + 정식_초발_경과일, ElasticNet. 반복 CV R² 0.426 (v1 개선 모델 0.33), 전체 자료 적합 R² 0.551.</p></div>
+  <div class="tbl"><table class="num"><thead><tr><th>변수</th><th>단위</th><th>log10 계수</th><th>감염주율 배수</th><th>95% CI</th><th>p</th></tr></thead><tbody><tr><td>이환과_즉시제거</td><td>0→1</td><td>-0.369</td><td>×0.43</td><td>-0.485 – -0.253</td><td>0.000</td></tr><tr><td>초발_DOY</td><td>+1 SD (10.8)</td><td>-0.224</td><td>×0.60</td><td>-0.429 – -0.018</td><td>0.033</td></tr><tr><td>정식_초발_경과일</td><td>+1 SD (13.8)</td><td>-0.104</td><td>×0.79</td><td>-0.310 – +0.102</td><td>0.316</td></tr></tbody></table></div>
+  <p class="note">감염주율 배수 = 10^계수. 이환과를 즉시 제거하는 농가는 감염주율이 약 0.43배, 초발이 1 SD(약 11일) 늦으면 약 0.6배입니다(다른 변수 고정). 초발_DOY와 정식_초발_경과일은 서로 상관이 높아(ρ 0.84) 정식_초발_경과일의 개별 효과는 유의하지 않습니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">06</span>여전히 성능을 떨어뜨리는 농가</h2>
+  <p>최종 회귀 모델의 반복 CV(10회) out-of-fold 예측에서 오차제곱합(SSE) 기여가 큰 순서입니다.</p>
+  <div class="tbl"><table class="num"><thead><tr><th>순위</th><th>ID</th><th>실제 피해도</th><th>발병주수</th><th>예측 피해도</th><th>잔차 (log10)</th><th>SSE 기여</th><th>유형</th></tr></thead><tbody><tr><td>1</td><td>Y26M013-2</td><td>0.0036</td><td>1</td><td>0.087</td><td>-1.38</td><td>14.1%</td><td>과대예측</td></tr><tr><td>2</td><td>Y25M037</td><td>0.0048</td><td>1</td><td>0.044</td><td>-0.96</td><td>6.8%</td><td>과대예측</td></tr><tr><td>3</td><td>Y25M103</td><td>0.1285</td><td>23</td><td>0.015</td><td>+0.93</td><td>6.4%</td><td>과소예측</td></tr><tr><td>4</td><td>Y25M018</td><td>0.3480</td><td>79</td><td>0.050</td><td>+0.84</td><td>5.2%</td><td>과소예측</td></tr><tr><td>5</td><td>Y25M105</td><td>0.0629</td><td>9</td><td>0.010</td><td>+0.78</td><td>4.5%</td><td>과소예측</td></tr><tr><td>6</td><td>Y25M060</td><td>0.2981</td><td>62</td><td>0.055</td><td>+0.74</td><td>4.0%</td><td>과소예측</td></tr><tr><td>7</td><td>Y25M047</td><td>0.4664</td><td>111</td><td>0.095</td><td>+0.69</td><td>3.5%</td><td>과소예측</td></tr><tr><td>8</td><td>Y25M013</td><td>0.0500</td><td>126</td><td>0.239</td><td>-0.68</td><td>3.4%</td><td>과대예측</td></tr><tr><td>9</td><td>Y25M108-1</td><td>0.1680</td><td>40</td><td>0.036</td><td>+0.67</td><td>3.4%</td><td>과소예측</td></tr><tr><td>10</td><td>Y25M005-1</td><td>0.0043</td><td>1</td><td>0.020</td><td>-0.66</td><td>3.3%</td><td>과대예측</td></tr><tr><td>11</td><td>Y26M021</td><td>0.1737</td><td>29</td><td>0.040</td><td>+0.63</td><td>3.0%</td><td>과소예측</td></tr><tr><td>12</td><td>Y25O009-1</td><td>0.0286</td><td>4</td><td>0.114</td><td>-0.60</td><td>2.6%</td><td>과대예측</td></tr></tbody></table></div>
+  <ul class="key">
+    <li><b>Y26M013-2</b> (SSE의 14%): 감염주 1주(0.36%)인데 이환과를 제거하지 않아 모델은 8.7%로 예측합니다. 같은 농가의 Y26M013이 삭제되며 남은 포장입니다.</li>
+    <li><b>Y25M037 · Y25M005-1</b>: 감염주 1주. 이 수준에서는 1–2주 차이가 log 척도에서 크게 벌어져 측정 잡음이 큽니다.</li>
+    <li><b>Y25M103 · Y25M018 · Y25M060 · Y25M108-1 · Y25M105</b>: 모두 이환과를 즉시 제거한 농가인데 피해가 6–35%입니다. 모델의 가장 강한 변수(즉시 제거 → 피해↓)와 반대라 크게 과소예측됩니다. 제거 응답이 실제 관행과 맞는지, 또는 제거 시점이 늦었는지 확인할 만합니다.</li>
+    <li><b>Y25M047</b>: 보호살균제가 1 → 0회로 수정되었고 피해 47%로 모델 예측(9.5%)보다 훨씬 심합니다.</li>
+    <li><b>Y25M013</b>: 피해도 0.05로 수정되었지만 발병주수 126주는 그대로입니다. 발병주수 기준으로는 약 0.6에 해당해, 원래 값(0.63)이 맞았을 가능성이 있습니다.</li>
+  </ul>
+  <h3>문제 농가를 뺐을 때 (민감도)</h3>
+  <div class="tbl"><table class="num"><thead><tr><th>제외 농가 수</th><th>R² (log10)</th><th>제외한 ID (SSE 기여 순)</th></tr></thead><tbody><tr><td>0</td><td>0.455</td><td>-</td></tr><tr><td>2</td><td>0.523</td><td>Y26M013-2, Y25M037</td></tr><tr><td>4</td><td>0.605</td><td>Y26M013-2, Y25M037, Y25M103, Y25M018</td></tr><tr><td>6</td><td>0.661</td><td>Y26M013-2, Y25M037, Y25M103, Y25M018, Y25M105, Y25M060</td></tr><tr><td>8</td><td>0.700</td><td>Y26M013-2, Y25M037, Y25M103, Y25M018, Y25M105, Y25M060, Y25M047, Y25M013</td></tr><tr><td>10</td><td>0.706</td><td>Y26M013-2, Y25M037, Y25M103, Y25M018, Y25M105, Y25M060, Y25M047, Y25M013, Y25M108-1, Y25M005-1</td></tr></tbody></table></div>
+  <h3>피해도와 발병주수가 맞지 않는 행</h3>
+  <p>피해도는 100 m² 표준주수 대비 비율이므로 발병주수 ÷ 피해도가 대부분 170–230입니다. 이 범위를 크게 벗어난 행은 둘 중 하나가 잘못 입력되었을 수 있습니다.</p>
+  <div class="tbl"><table class="num"><thead><tr><th>ID</th><th>피해도</th><th>발병주수</th><th>발병주수 ÷ 피해도</th></tr></thead><tbody><tr><td>Y25M041</td><td>0.0740</td><td>2</td><td>27</td></tr><tr><td>Y25O004-1</td><td>0.0500</td><td>2</td><td>40</td></tr><tr><td>Y26O002-1</td><td>0.0317</td><td>2</td><td>63</td></tr><tr><td>Y25O012-1</td><td>0.3571</td><td>25</td><td>70</td></tr><tr><td>Y25O004</td><td>0.0588</td><td>5</td><td>85</td></tr><tr><td>Y25O006</td><td>0.1800</td><td>18</td><td>100</td></tr><tr><td>Y25M101</td><td>0.2640</td><td>80</td><td>303</td></tr><tr><td>Y25M009</td><td>0.0500</td><td>17</td><td>340</td></tr><tr><td>Y25M009-1</td><td>0.0500</td><td>17</td><td>340</td></tr><tr><td>Y25M013</td><td>0.0500</td><td>126</td><td>2520</td></tr></tbody></table></div>
+</section>
+
+<section>
+  <h2><span class="no">07</span>허들 모형 (v2, 142건)</h2>
+  <div class="tbl"><table class="num"><thead><tr><th>모형</th><th>Spearman ρ</th><th>R² (원척도)</th><th>발생 판별 AUC</th></tr></thead><tbody><tr><td>허들: P(발생) × 피해도|발생</td><td>0.373 ± 0.048</td><td>0.153 ± 0.034</td><td>0.684 ± 0.035</td></tr><tr><td>단일 회귀 (142건)</td><td>0.325 ± 0.059</td><td>0.040 ± 0.039</td><td>0.657 ± 0.038</td></tr></tbody></table></div>
+  <p>허들 모형이 단일 회귀보다 원척도 R²와 순위상관 모두 높았습니다(v1에서는 순위상관이 단일 회귀가 조금 높았음). 다만 발병 전 정보만으로 피해 크기를 예측하는 힘은 여전히 약합니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">08</span>권고</h2>
+  <ol class="steps">
+    <li><b>Y25M013</b>의 피해도(0.05)와 발병주수(126) 중 어느 것이 맞는지 원자료에서 확인해 주세요. 06장 표의 다른 불일치 행(Y25M041, Y25O012-1, Y25O004-1 등)도 함께 확인하면 좋습니다.</li>
+    <li><b>Y26M013-2</b>를 남긴 것이 의도인지 확인해 주세요. 같은 농가의 다른 두 포장은 삭제되었습니다.</li>
+    <li>피해도 값 때문에 삭제한 발병 농가 7곳은 <b>발생 분류에는 다시 포함</b>하는 것을 권합니다. 발생 라벨 자체가 맞다면 발생 모델의 AUC가 v1 수준(약 0.76–0.77)으로 돌아옵니다.</li>
+    <li>이환과 즉시 제거 응답과 실제 피해가 어긋나는 농가(Y25M103, Y25M018, Y25M060, Y25M108-1, Y25M105)는 제거 시점이나 범위를 추가로 조사하면 모델 설명력을 더 높일 수 있습니다.</li>
+  </ol>
+  <p class="note">코드: 저장소 <code>anthracnose_ml/</code>. <code>python run_all.py v2.xlsx results_v2</code>로 전체 재분석, <code>run_compare.py</code>로 버전 비교, <code>run_reg_diag.py</code>로 문제 농가 진단, <code>make_report_v2.py</code>로 이 보고서를 만듭니다.</p>
+</section>
+</div>
