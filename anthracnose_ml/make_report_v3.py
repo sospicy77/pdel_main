@@ -58,16 +58,25 @@ def model_bar(rows, width=660, label_w=200):
 def build_fill(xlsx, rd):
     d = C.load(xlsx)
     n1 = int(d[C.Y1].sum())
-    cls = json.load(open(f"{rd}/cls_final.json"))
-    eff = json.load(open(f"{rd}/effects.json"))
-    s2 = pd.read_csv(f"{rd}/cls_B_sel2_summary.csv")
-    cls_nested = s2[(s2.strategy == "rfe") & (s2.model == "ET_l3") & (s2.k.astype(str) == "25")].iloc[0]
+    has_cls = os.path.exists(f"{rd}/cls_final.json")      # v4 회귀 전용 폴더에는 분류 결과가 없음
+    if has_cls:
+        cls = json.load(open(f"{rd}/cls_final.json"))
+        eff = json.load(open(f"{rd}/effects.json"))
+        s2 = pd.read_csv(f"{rd}/cls_B_sel2_summary.csv")
+        cls_nested = s2[(s2.strategy == "rfe") & (s2.model == "ET_l3") & (s2.k.astype(str) == "25")].iloc[0]
+    # 계열별 대표 모델 (run_reg_v4 가 고른 것, 없으면 v3 설정)
+    if os.path.exists(f"{rd}/reg_picks.json"):
+        pk = json.load(open(f"{rd}/reg_picks.json"))
+        scale0, set0, picks = pk["scale"], pk["set"], {t: tuple(v) for t, v in pk["picks"].items()}
+    else:
+        scale0, set0 = "log10", "A"
+        picks = {"ridge": ("Ridge", 3), "krr": ("KRR", 3), "et": ("ET_b", 3), "et7": ("ET_b", 7)}
 
     cmp_ = pd.read_csv(f"{rd}/reg3_compare.csv")
     nested = json.load(open(f"{rd}/reg3_nested.json"))
     R = {t: json.load(open(f"{rd}/reg3_{t}.json")) for t in ["ridge", "krr", "et", "et7"]}
 
-    lg = cmp_[(cmp_.scale == "log10") & (cmp_.set == "A")]
+    lg = cmp_[(cmp_.scale == scale0) & (cmp_.set == set0)]
     best = lg.sort_values("R2_log_mean", ascending=False).drop_duplicates("model")
     rows = [{"label": MODEL_LAB.get(r.model, r.model), "v": r.R2_log_mean,
              "fam": "앙상블" if r.k == -1 else FAMILY[r.model], "k": "-" if r.k == -1 else int(r.k)}
@@ -95,7 +104,8 @@ def build_fill(xlsx, rd):
 
     # k 곡선
     series = {}
-    for m, lab in [("Ridge", "Ridge"), ("KRR", "Kernel Ridge"), ("ET_b", "ExtraTrees")]:
+    for m in [picks["ridge"][0], picks["krr"][0], picks["et"][0]]:
+        lab = MODEL_LAB.get(m, m)
         g = lg[lg.model == m].sort_values("k")
         series[lab] = [(int(r.k), r.R2_log_mean) for r in g.itertuples()]
 
@@ -103,13 +113,14 @@ def build_fill(xlsx, rd):
     t_final = table(pd.DataFrame([[lab, ", ".join(R[t]["selected"]),
                                    f'{R[t]["cv"]["R2_log"][0]:.3f} ± {R[t]["cv"]["R2_log"][1]:.3f}',
                                    f'{R[t]["cv"]["R2_raw"][0]:.3f}', f'{R[t]["cv"]["rho"][0]:.3f}']
-                                  for t, lab in [("ridge", "Ridge (선형)"), ("krr", "Kernel Ridge (비선형 커널)"),
-                                                 ("et", "ExtraTrees (트리, k=3)"), ("et7", "ExtraTrees (트리, k=7)")]],
+                                  for t, lab in [(t, f"{MODEL_LAB.get(picks[t][0], picks[t][0])} ({fam}, k={picks[t][1]})")
+                                                 for t, fam in [("ridge", "선형"), ("krr", "커널"), ("et", "트리"),
+                                                                ("et7", "트리")]]],
                                  columns=["모델", "선택 변수", "R² (log10)", "R² (원척도)", "Spearman ρ"]), "num")
 
     # Ridge 계수
     dd = d[d[C.Y1] == 1].reset_index(drop=True)
-    coef = R["ridge"]["coef_std"]
+    coef = R["ridge"].get("coef_std", {})
     t_coef = table(pd.DataFrame([[v, "0→1" if dd[v].nunique() == 2 else f"+1 SD ({dd[v].std():.1f})",
                                   f"{c:+.3f}", f"×{10 ** c:.2f}"] for v, c in coef.items()],
                                 columns=["변수", "단위", "log10 계수 (표준화)", "피해도 배수"]), "num")
@@ -140,12 +151,9 @@ def build_fill(xlsx, rd):
 
     fill = dict(
         n=len(d), n1=n1, n0=len(d) - n1,
-        cls_auc=f"{cls_nested.AUC_mean:.3f}", cls_auc_fixed=f'{cls["perf_fixed"]["AUC"]["mean"]:.3f}',
         reg_r2=f'{R["ridge"]["cv"]["R2_log"][0]:.3f}', reg_nested=f'{nested["nested"]["R2_log"][0]:.3f}',
         krr_r2=f'{R["krr"]["cv"]["R2_log"][0]:.3f}', et_r2=f'{R["et"]["cv"]["R2_log"][0]:.3f}',
-        cls_bar=bar_chart(imp_rows(cls)[:15], "shap"), leg_cls=LEG_RISK.format(w="발생 위험"),
-        cls_forest=forest(eff["cls"]["table"]), cls_or=or_table(eff["cls"]["table"]), leg_or=LEG_OR,
-        cls_core_auc=f'{eff["cls"]["cv_auc"][0]:.3f}',
+        leg_cls=LEG_RISK.format(w="발생 위험"), leg_or=LEG_OR,
         model_bar=model_bar(rows), t_models=t_models, t_scale=t_scale,
         curve=line_chart(series, "R²"),
         nested_r2=f'{nested["nested"]["R2_log"][0]:.3f} ± {nested["nested"]["R2_log"][1]:.3f}',
@@ -155,6 +163,11 @@ def build_fill(xlsx, rd):
         et_bar=bar_chart(et_rows, "shap"), leg_sev=LEG_RISK.format(w="피해"), deps=deps,
         t_rows=t_rows, t_sens=t_sens,
     )
+    if has_cls:
+        fill.update(cls_auc=f"{cls_nested.AUC_mean:.3f}", cls_auc_fixed=f'{cls["perf_fixed"]["AUC"]["mean"]:.3f}',
+                    cls_bar=bar_chart(imp_rows(cls)[:15], "shap"), cls_forest=forest(eff["cls"]["table"]),
+                    cls_or=or_table(eff["cls"]["table"]), cls_core_auc=f'{eff["cls"]["cv_auc"][0]:.3f}')
+    fill["reg_picks"] = picks
     return fill
 
 

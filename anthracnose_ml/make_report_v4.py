@@ -102,7 +102,9 @@ def vul_fill(r4):
 
 
 def main(x4, r4, x3, r3, out):
-    fill = build_fill(x3, r3)          # 피해도 회귀 섹션 (v3 결과)
+    # 피해도 회귀 섹션: v4 회귀 결과가 있으면 그것을, 없으면 v3 결과를 사용
+    reg_dir = f"{r4}/reg" if os.path.exists(f"{r4}/reg/reg3_et7.json") else r3
+    fill = build_fill(x4 if reg_dir != r3 else x3, reg_dir)
     cfg = json.load(open(f"{r4}/configs.json"))
     t = cfg["threshold"]
     d4 = C.load(x4)
