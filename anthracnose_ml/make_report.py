@@ -86,12 +86,13 @@ def line_chart(series, ylab, width=640, height=260):
     pad_l, pad_b, pad_t, pad_r = 44, 30, 10, 120
     ks = sorted({k for s in series.values() for k, _ in s})
     vs = [v for s in series.values() for _, v in s]
-    vmin, vmax = math.floor(min(vs) * 50) / 50, math.ceil(max(vs) * 50) / 50
+    step = 0.02 if max(vs) - min(vs) < 0.15 else 0.05
+    vmin, vmax = math.floor(min(vs) / step) * step, math.ceil(max(vs) / step) * step
     xi = {k: i for i, k in enumerate(ks)}
     X = lambda k: pad_l + xi[k] / (len(ks) - 1) * (width - pad_l - pad_r)
     Y = lambda v: pad_t + (vmax - v) / (vmax - vmin) * (height - pad_t - pad_b)
     out = [f'<svg viewBox="0 0 {width} {height}" class="chart" role="img">']
-    for t in np.arange(vmin, vmax + 1e-9, 0.02):
+    for t in np.arange(vmin, vmax + 1e-9, step):
         out.append(f'<line x1="{pad_l}" x2="{width-pad_r}" y1="{Y(t):.1f}" y2="{Y(t):.1f}" class="grid"/>'
                    f'<text x="{pad_l-6}" y="{Y(t)+4:.1f}" class="tick" text-anchor="end">{t:.2f}</text>')
     for k in ks:

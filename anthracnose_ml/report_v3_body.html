@@ -1,0 +1,124 @@
+<div class="wrap">
+<header>
+  <div class="eyebrow">고추탄저병 설문 · 최종 분석 (v3 데이터)</div>
+  <h1>탄저병 발생과 피해도를 좌우한 변수</h1>
+  <p class="sub">농가 {{n}}곳 (발생 {{n1}} · 미발생 {{n0}}) · 분류: Y1 발생라벨 · 회귀: Y2 피해도_전체 (발병 농가) · 반복 5-fold 교차검증</p>
+</header>
+
+<section>
+  <h2><span class="no">요약</span>핵심 결과</h2>
+  <div class="stats">
+    <div class="stat"><span class="k">발생 분류 (Y1, 142건)</span><span class="v">AUC {{cls_auc}}</span><span class="d">ExtraTrees · RFE 변수 25개 · 기상 포함</span></div>
+    <div class="stat"><span class="k">피해도 회귀 (Y2, 60건)</span><span class="v">R² {{reg_r2}}</span><span class="d">log10(Y2) · Ridge · 변수 3개 · nested {{reg_nested}}</span></div>
+    <div class="stat"><span class="k">비선형 ML 회귀</span><span class="v">R² {{krr_r2}}</span><span class="d">Kernel Ridge · ExtraTrees {{et_r2}} · 같은 3개 변수</span></div>
+  </div>
+  <ul class="key">
+    <li><b>발생</b>은 기상이 가장 크게 좌우했습니다. <b class="up">7~8월 누적강수량</b>(1 SD=86 mm당 오즈 1.90배)과 <b class="up">6월 평균기온</b>(1 SD=1.3 ℃당 2.08배)이 유의했고, <b class="up">작년 탄저 발생</b>, <b class="up">노출값</b>, <b class="up">강우 후 방제 지연</b>이 위험을 높이고 <b class="down">제초매트</b>(0.46배)가 낮추는 방향이었습니다.</li>
+    <li><b>피해도</b>는 세 변수로 대부분 설명됩니다. <b class="down">이환과 즉시 제거</b>(피해도 약 0.44배), <b class="down">늦은 초발</b>(1 SD=11일 늦을 때 0.69배), <b class="down">정식~초발 기간이 긴 것</b>(1 SD=14일당 0.73배)입니다.</li>
+    <li>15개 회귀 모델을 비교한 결과 <b>선형·커널 모델(Ridge, ElasticNet, Kernel Ridge, Huber, 가우시안 프로세스)과 ExtraTrees가 R² 0.49–0.52</b>로 비슷하게 가장 좋았고, 부스팅 계열(XGBoost, LightGBM, CatBoost, GBM)은 0.35–0.39로 낮았습니다. 표본이 60건이라 단순한 모델이 유리했습니다. 변수를 3개보다 늘리면 모든 모델에서 성능이 떨어졌습니다.</li>
+    <li>피해도 회귀 R²는 첫 분석 0.15 → log10 변환 0.33 → 데이터 수정(v2) 0.43–0.46 → v3 0.51–0.52로 올랐습니다. Y26M013-2 값 수정(0.0036 → 0.036)으로 지난번 오차 1위 농가가 해소되었습니다.</li>
+    <li>남은 오차는 <b>이환과를 즉시 제거했다고 답했는데 피해가 6–35%인 농가</b>(Y25M103, Y25M018, Y25M060, Y25M105, Y26M021, Y25M108-1)와 감염주가 극히 적은 Y25M037·Y25M005-1이 주로 만듭니다(05장).</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="no">01</span>데이터와 분석 설계</h2>
+  <ul class="key">
+    <li><b>v2 대비 변경:</b> Y26M013-2 피해도 0.0036 → 0.036, 발병주수 컬럼 삭제(설명변수가 아니어서 모델에 영향 없음). 발생 라벨과 설명변수는 v2와 같습니다.</li>
+    <li><b>분류:</b> 반응변수 Y1 발생라벨 (142건, 발생 60). 설명변수는 품종저항성_ord부터 노출값까지에서 초발_DOY·정식_초발_경과일·이환과_즉시제거를 뺀 45개. 변수세트 비교 → 변수 선택 방법(평균순위·RF-SHAP·RFE·Boruta) 비교 → 최고 성능 −0.005 이내에서 변수가 가장 적은 설정을 최종으로 골랐습니다.</li>
+    <li><b>회귀:</b> 반응변수 Y2 피해도_전체 (발병 농가 60건). 위 3개 변수를 포함합니다. Y2는 0.4%–55%로 몇 자릿수에 걸쳐 있어 log10(Y2)를 주 척도로 학습하고, Y2 원값을 직접 학습한 모델과도 비교했습니다. 모든 성능은 원척도 Y2로도 함께 보고합니다.</li>
+    <li><b>검증:</b> 변수 선택은 항상 각 학습 fold 안에서 수행했습니다. 여러 모델 중 최고를 고르는 데서 생기는 낙관을 빼기 위해, 모델·변수 수 선택까지 안쪽 CV로 하는 nested CV도 따로 계산했습니다.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="no">02</span>발생 분류 모델 (Y1)</h2>
+  <p>기상 포함 세트(45개)가 v7 세트(기상 제외)보다 좋았고(AUC 0.712 vs 0.685, 1단계), RFE로 고른 25개 변수의 ExtraTrees가 최종 모델입니다. 변수 선택까지 fold 안에서 한 AUC는 {{cls_auc}}, 변수를 고정하고 잰 AUC는 {{cls_auc_fixed}}입니다.</p>
+  <figure>
+    {{leg_cls}}
+    {{cls_bar}}
+    <figcaption>최종 모델의 mean|SHAP| 상위 15개 (발생 확률 단위). 색은 변수값과 SHAP의 순위상관으로 정한 방향입니다.</figcaption>
+  </figure>
+  <h3>정량적 효과 크기 (핵심 9개 변수 로지스틱 회귀)</h3>
+  <figure>
+    {{leg_or}}
+    {{cls_forest}}
+    <figcaption>상관이 큰 기상·방제 변수는 군집별 대표 하나만 남겨(VIF &lt; 2) 적합한 로지스틱 회귀의 오즈비. 연속형은 1 SD당, 이진형은 0→1. * p &lt; 0.05. 같은 변수의 CV AUC {{cls_core_auc}}.</figcaption>
+  </figure>
+  {{cls_or}}
+</section>
+
+<section>
+  <h2><span class="no">03</span>피해도 회귀 모델 비교 (Y2)</h2>
+  <figure>
+    <div class="legend"><span><i style="background:var(--fam1)"></i>선형 · 앙상블</span><span><i style="background:var(--fam2)"></i>커널 · 거리</span><span><i style="background:var(--fam3)"></i>트리</span><span><i style="background:var(--fam4)"></i>부스팅</span></div>
+    {{model_bar}}
+    <figcaption>모델별 최고 교차검증 R² (log10 Y2, 변수세트 A, 5-fold × 10회). 각 모델은 k = 3, 5, 7, 10, 15, 전체 중 가장 좋은 변수 수를 쓴 결과입니다.</figcaption>
+  </figure>
+  {{t_models}}
+  <p class="note">R² (Y2 원척도)는 log10 예측을 원래 비율로 되돌려 계산했습니다. 원척도 R²는 피해가 큰 소수 농가가 좌우해 log 척도보다 낮습니다. RMSE는 피해도 비율 단위(0.12 ≈ 12%p)입니다.</p>
+
+  <h3>반응 척도와 변수세트</h3>
+  {{t_scale}}
+  <p>log10(Y2)로 학습한 모델이 log 척도 R²는 물론 원척도 R²에서도 Y2 원값으로 직접 학습한 모델과 비슷하거나 나았습니다. 기상을 넣은 세트 B는 개선이 없어 A를 썼습니다.</p>
+
+  <h3>변수 수에 따른 성능</h3>
+  <figure>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Ridge</span><span><i style="background:var(--s2)"></i>Kernel Ridge</span><span><i style="background:var(--s3)"></i>ExtraTrees</span></div>
+    {{curve}}
+    <figcaption>평균순위 상위 k개 변수로 학습했을 때의 교차검증 R² (log10). 세 모델 모두 k=3에서 가장 좋고, 변수를 늘리면 잡음 변수 때문에 떨어집니다.</figcaption>
+  </figure>
+
+  <h3>선택 편향을 뺀 성능 (nested CV)</h3>
+  <p>상위 10개 후보(모델 × k) 중 하나를 안쪽 CV로 고르는 과정까지 바깥 CV로 평가한 R²는 <b>{{nested_r2}}</b>입니다. 위 표의 최고값(0.52)과의 차이가 "여러 모델 중 최고를 고른" 데서 오는 낙관 정도입니다. 안쪽 CV가 고른 모델: {{nested_freq}}.</p>
+</section>
+
+<section>
+  <h2><span class="no">04</span>최종 피해도 모델과 해석</h2>
+  <p>세 계열의 대표 모델을 같은 조건으로 다시 평가했습니다(5-fold × 10회, 다른 시드). 모두 같은 세 변수를 골랐고 성능도 비슷해, 결론이 특정 모델에 의존하지 않습니다.</p>
+  {{t_final}}
+  <div class="callout"><p><b>최종 피해도 모델:</b> log10(Y2) ~ 이환과_즉시제거 + 초발_DOY + 정식_초발_경과일 (Ridge). 같은 세 변수의 Kernel Ridge·ExtraTrees도 R² 0.49로 거의 같아, 비선형 효과나 상호작용은 거의 없다고 볼 수 있습니다.</p></div>
+
+  <h3>Ridge 계수: 피해도가 몇 배 달라지나</h3>
+  {{t_coef}}
+  <p class="note">피해도 배수 = 10^계수, 다른 두 변수를 고정했을 때. 이환과를 즉시 제거하는 농가는 피해도가 약 0.44배, 초발이 11일 늦으면 약 0.69배입니다. 초발_DOY와 정식_초발_경과일은 서로 상관이 높아(ρ 0.86) 두 계수를 묶어서 "초발 시기"의 효과로 읽는 것이 안전합니다.</p>
+
+  <h3>Kernel Ridge: fold 밖 permutation 중요도</h3>
+  {{krr_perm}}
+  <p class="note">fold 선택률은 50개 학습 fold 중 그 변수가 상위 3개에 든 비율입니다. 상위 3개 외 변수는 몇 fold에서만 뽑혀 값이 불안정합니다.</p>
+
+  <h3>ExtraTrees (변수 7개): SHAP으로 본 변수별 효과</h3>
+  <figure>
+    {{leg_sev}}
+    {{et_bar}}
+    <figcaption>변수를 7개로 늘린 ExtraTrees의 mean|SHAP| (log10 피해도 단위, 0.3 ≈ 2배). 4–7번째 변수(작년 발생, 보호살균제, 사전경과, 동일기작 연속)는 효과가 작고 성능도 높이지 못했습니다.</figcaption>
+  </figure>
+  <div class="deps">{{deps}}</div>
+  <p class="note">점 하나가 발병 농가 하나입니다. 세로축은 그 변수가 log10 피해도에 더한 기여(점선 위 = 피해↑). 초발이 DOY 210 무렵(7월 말)보다 늦으면 피해 기여가 음수로 바뀝니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">05</span>오차가 큰 농가</h2>
+  <p>최종 Ridge 모델의 반복 CV out-of-fold 예측에서 오차제곱합(SSE) 기여가 큰 순서입니다. Kernel Ridge·ExtraTrees에서도 같은 농가들이 상위에 나왔습니다.</p>
+  {{t_rows}}
+  <ul class="key">
+    <li><b>이환과 즉시 제거 = 1인데 피해가 큰 농가:</b> Y25M103(12.8%), Y25M018(34.8%), Y25M060(29.8%), Y25M105(6.3%), Y26M021(17.4%), Y25M108-1(16.8%). 모델의 가장 강한 변수와 반대 방향이라 크게 과소예측됩니다. 제거를 시작한 시점이 늦었거나, 응답이 실제 관행과 다를 수 있습니다.</li>
+    <li><b>감염이 극히 적은 농가:</b> Y25M037(0.48%), Y25M005-1(0.43%). 감염주 1주 수준이라 log 척도에서 작은 차이가 크게 벌어집니다.</li>
+    <li><b>Y25M013</b>(5%): v2에서 0.63 → 0.05로 수정된 값으로, 모델은 26% 정도로 예측합니다. 지난번 지적처럼 원래 발병주수(126주)와 맞지 않아 다시 확인할 만합니다.</li>
+    <li><b>Y25M047</b>(46.6%): 보호살균제 0회, 즉시 제거 안 함으로 피해 쪽이지만 모델 예측(11%)보다 훨씬 심합니다.</li>
+  </ul>
+  <h3>오차가 큰 농가를 뺐을 때 (민감도)</h3>
+  {{t_sens}}
+  <p class="note">민감도 분석일 뿐, 성능 개선으로 보면 안 됩니다. 원자료에서 입력 오류가 확인된 경우에만 수정·제외를 권합니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">06</span>결론</h2>
+  <ul class="key">
+    <li><b>발생 위험</b>은 여름 강우(7~8월 누적강수량)와 6월 기온, 작년 발생 이력이 가장 중요하고, 제초매트 사용과 강우 직후 신속한 방제가 위험을 낮추는 방향입니다. 발생 예측력은 AUC 약 0.73–0.78입니다.</li>
+    <li><b>피해 정도</b>는 발병 후 관리와 초발 시기가 결정합니다. 이환과를 즉시 솎아내는 관행이 가장 큰 차이(피해도 약 절반)를 만들었고, 초발이 늦을수록 피해가 작았습니다. 세 변수로 log 피해도 변동의 약 46–52%를 설명합니다.</li>
+    <li>표본이 작아(발병 60건) 복잡한 부스팅 모델보다 선형·커널 모델과 ExtraTrees가 낫습니다. 모델을 더 복잡하게 하기보다 오차가 큰 농가의 응답 확인과 표본 추가가 성능을 더 높일 것입니다.</li>
+  </ul>
+  <p class="note">코드: 저장소 <code>anthracnose_ml/</code>. 분류는 <code>run_selection.py</code> → <code>run_selection2.py</code> → <code>run_final.py</code> → <code>run_effects.py</code>, 회귀는 <code>run_reg_final.py compare|nested|final</code>, 보고서는 <code>make_report_v3.py</code>.</p>
+</section>
+</div>
