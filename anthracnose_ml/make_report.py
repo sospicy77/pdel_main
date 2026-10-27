@@ -81,7 +81,7 @@ def forest(rows, width=640, label_w=190):
     return "".join(out)
 
 
-def line_chart(series, ylab, width=640, height=260):
+def line_chart(series, ylab, width=640, height=260, xlab="변수 수 k"):
     """series: {name: [(k, v), ...]}. 최대 3개 계열."""
     pad_l, pad_b, pad_t, pad_r = 44, 30, 10, 120
     ks = sorted({k for s in series.values() for k, _ in s})
@@ -97,7 +97,7 @@ def line_chart(series, ylab, width=640, height=260):
                    f'<text x="{pad_l-6}" y="{Y(t)+4:.1f}" class="tick" text-anchor="end">{t:.2f}</text>')
     for k in ks:
         out.append(f'<text x="{X(k):.1f}" y="{height-10}" class="tick" text-anchor="middle">{k}</text>')
-    out.append(f'<text x="{width-pad_r}" y="{height-10}" class="tick" text-anchor="start" dx="8">변수 수 k</text>')
+    out.append(f'<text x="{width-pad_r}" y="{height-10}" class="tick" text-anchor="start" dx="14">{xlab}</text>')
     for i, (name, s) in enumerate(series.items()):
         pts = " ".join(f"{X(k):.1f},{Y(v):.1f}" for k, v in s)
         out.append(f'<polyline points="{pts}" class="line s{i+1}"/>')

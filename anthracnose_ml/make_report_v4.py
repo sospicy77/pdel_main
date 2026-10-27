@@ -73,7 +73,7 @@ def main(x4, r4, x3, r3, out):
     fill.update(cls_fill("all", "ca"))
     fill.update(cls_fill("noweather", "cn"))
     fill.update(n=len(d4), n1=npos, n0=len(d4) - npos, thr=f"{t:g}", thr_pct=f"{t * 100:g}",
-                thr_curve=line_chart(series, "AUC"), t_thr=t_thr, t_var=t_var,
+                thr_curve=line_chart(series, "AUC", xlab="임계값"), t_thr=t_thr, t_var=t_var,
                 nt_auc=f'{cfg["noweather_nt"]["cv_nested"]:.3f}', leg_cls=LEG_RISK.format(w="발생 위험"),
                 leg_or=LEG_OR)
     body = open(f"{HERE}/report_v4_body.html").read()
