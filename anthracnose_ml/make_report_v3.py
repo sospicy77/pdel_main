@@ -107,7 +107,8 @@ def build_fill(xlsx, rd):
     for m in [picks["ridge"][0], picks["krr"][0], picks["et"][0]]:
         lab = MODEL_LAB.get(m, m)
         g = lg[lg.model == m].sort_values("k")
-        series[lab] = [(int(r.k), r.R2_log_mean) for r in g.itertuples()]
+        # 음수 R² 는 축을 크게 늘려 나머지를 읽기 어렵게 하므로 0 으로 잘라 표시 (본문에 실제 값 표기)
+        series[lab] = [(int(r.k), max(r.R2_log_mean, 0.0)) for r in g.itertuples()]
 
     # 최종 모델 성능 표
     t_final = table(pd.DataFrame([[lab, ", ".join(R[t]["selected"]),
