@@ -101,7 +101,8 @@ def vul_fill(r4):
             "v_base": f"{r['shapley_base'] * 100:.1f}"}
 
 
-def main(x4, r4, x3, r3, out):
+def main(x4, r4, x3, r3, out, body_file="report_v4_body.html", title="고추탄저병 최종 분석", tr=None):
+    """tr: 생성된 표·그림 문자열에 적용할 번역 함수 (영문 보고서용)."""
     # 피해도 회귀 섹션: v4 회귀 결과가 있으면 그것을, 없으면 v3 결과를 사용
     reg_dir = f"{r4}/reg" if os.path.exists(f"{r4}/reg/reg3_et7.json") else r3
     fill = build_fill(x4 if reg_dir != r3 else x3, reg_dir)
@@ -158,10 +159,10 @@ def main(x4, r4, x3, r3, out):
                 thr_curve=line_chart(series, "AUC", xlab="임계값"), t_thr=t_thr, t_var=t_var,
                 nt_auc=f'{cfg["noweather_nt"]["cv_nested"]:.3f}', leg_cls=LEG_RISK.format(w="발생 위험"),
                 leg_or=LEG_OR)
-    body = open(f"{HERE}/report_v4_body.html").read()
+    body = open(f"{HERE}/{body_file}").read()
     for k, v in fill.items():
-        body = body.replace("{{" + k + "}}", str(v))
-    page = (f'<title>고추탄저병 최종 분석</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
+        body = body.replace("{{" + k + "}}", tr(str(v)) if tr else str(v))
+    page = (f'<title>{title}</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
             f"{FONTS}\n{STYLE}\n{EXTRA_CSS}\n{body}")
     open(out, "w").write(page)
     print("wrote", out, "unfilled:", re.findall(r"\{\{\w+\}\}", page))

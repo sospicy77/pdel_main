@@ -83,7 +83,9 @@ def forest(rows, width=640, label_w=190):
 
 def line_chart(series, ylab, width=640, height=260, xlab="변수 수 k"):
     """series: {name: [(k, v), ...]}. 최대 3개 계열."""
-    pad_l, pad_b, pad_t, pad_r = 44, 30, 10, 120
+    # 오른쪽 여백은 끝 라벨(계열 이름) 길이에 맞춤
+    pad_l, pad_b, pad_t = 44, 30, 10
+    pad_r = max(120, 7 * max(len(n) for n in series) + 24)
     ks = sorted({k for s in series.values() for k, _ in s})
     vs = [v for s in series.values() for _, v in s]
     step = 0.02 if max(vs) - min(vs) < 0.15 else 0.05
