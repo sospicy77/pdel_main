@@ -22,6 +22,85 @@ MODEL = {"ET_l3": "ExtraTrees", "RF_l1": "Random Forest", "RF_l3": "Random Fores
 VLAB = {"all": "전체 변수 (기상 포함)", "noweather": "기상 제외 (노출값만)", "noweather_nt": "기상 제외 + 강우-방제 타이밍 제외"}
 
 
+PR_LAB = {"제초매트": "제초매트", "보호_카_횟수": "보호살균제 횟수", "7~8월_사전경과_최대": "강우 전 방제 경과일",
+          "7~8월_사후지연_최대": "강우 후 방제 지연"}
+F_LAB = {"노출값": "노출값", "작년_탄저발생": "작년 발생", "연작": "연작", "인근고추밭_50m": "인근 고추밭",
+         "log_성묘개수": "농가 규모(성묘 개수)", **PR_LAB}
+# 변수값이 커질 때 발생 위험이 커지는(+1) / 작아지는(−1) 방향 (모형 구조상 정해짐)
+F_DIR = {"노출값": 1, "작년_탄저발생": 1, "연작": 1, "인근고추밭_50m": 1, "log_성묘개수": -1, "제초매트": -1,
+         "보호_카_횟수": -1, "7~8월_사전경과_최대": 1, "7~8월_사후지연_최대": 1}
+
+
+def vul_fill(r4):
+    r = json.load(open(f"{r4}/vulnerability/vulnerability.json"))
+    pct = lambda v: f"{v * 100:.1f}"
+    ci = lambda c: f"{c[0] * 100:.1f}–{c[1] * 100:.1f}"
+    keys = [("현재 관행", "현재 관행"), ("7~8월_사전경과_최대 최선", "강우 전 방제 경과일 ≤ 2일"),
+            ("제초매트 최선", "제초매트 사용"), ("보호_카_횟수 최선", "보호살균제 10회 이상"),
+            ("7~8월_사후지연_최대 최선", "강우 후 방제 지연 ≤ 1일"), ("모두 최선 관행", "네 가지 모두 최선")]
+
+    def sc_table(sc, sci, red=None):
+        rows = []
+        for k, lab in keys:
+            row = [lab]
+            for e in ["0.1", "0.5", "0.9"]:
+                cur = sc[e]["현재 관행"]
+                v = sc[e][k]
+                if k == "현재 관행":
+                    row.append(f"{pct(v)}% ({ci(sci[e][k])})")
+                else:
+                    rr = (cur - v) / cur * 100
+                    extra = f" [감소 {ci(red[e][k])}]" if red else ""
+                    row.append(f"{pct(v)}% (−{(cur - v) * 100:.1f}%p, −{rr:.0f}%){extra}")
+            rows.append(row)
+        return table(pd.DataFrame(rows, columns=["재배방법 시나리오", "노출값 0.1", "노출값 0.5", "노출값 0.9"]), "num")
+
+    t_sc = sc_table(r["scenarios"], r["scenarios_ci"], r["reduction_ci"])
+    t_prev0 = sc_table(r["scenarios_prev"]["0"], r["scenarios_prev_ci"]["0"])
+    t_prev1 = sc_table(r["scenarios_prev"]["1"], r["scenarios_prev_ci"]["1"])
+
+    g = r["curve_grid"]
+    idx = list(range(0, len(g), 2))
+    series = {nm: [(f"{g[i]:.1f}", r["curve"][k][i]) for i in idx]
+              for k, nm in [("모든 관행", "네 가지 모두"), ("7~8월_사전경과_최대", "강우 전 방제 경과일"),
+                            ("제초매트", "제초매트")]}
+    sh = r["shapley"]["평균|기여|"]
+    sh_rows = sorted([{"var": F_LAB[k], "shap": v * 100, "rho": F_DIR[k]} for k, v in sh.items() if v > 1e-4],
+                     key=lambda x: -x["shap"])
+    t_sh = table(pd.DataFrame([[F_LAB[k], f"{sh[k] * 100:.1f}"] + [f"{r['shapley'][gname][k] * 100:+.1f}"
+                                for gname in ["낮음(<0.3)", "중간(0.3–0.7)", "높음(≥0.7)"]]
+                               for k in sorted(sh, key=lambda k: -sh[k])],
+                              columns=["변수", "평균 |기여| (%p)", "노출 낮음 평균 (%p)", "노출 중간", "노출 높음"]), "num")
+    inter = sorted(r["shapley_inter"].items(), key=lambda kv: -kv[1]["mean_abs"])[:6]
+    t_int = table(pd.DataFrame([[" × ".join(F_LAB[x] for x in k.split("×")), f"{v['mean_abs'] * 100:.2f}",
+                                 f"{v['mean'] * 100:+.2f}"] for k, v in inter],
+                               columns=["변수 쌍", "평균 |결합 기여| (%p)", "평균 결합 기여 (%p)"]), "num")
+    share = r["adapt_share"]
+    w_rows = sorted([{"var": PR_LAB[k], "shap": v * 100, "rho": -1} for k, v in share.items()], key=lambda x: -x["shap"])
+    t_w = table(pd.DataFrame([[PR_LAB[k], f"{r['params']['w'][k]:.2f}", f"{share[k] * 100:.0f}%",
+                               f"{r['adapt_share_ci'][k][0] * 100:.0f}–{r['adapt_share_ci'][k][1] * 100:.0f}%",
+                               {1: "클수록 좋음", -1: "작을수록 좋음"}[r["practice_ref"][k]["dir"]],
+                               f"{r['practice_ref'][k]['low']:g} – {r['practice_ref'][k]['high']:g}"]
+                              for k in sorted(share, key=lambda k: -share[k])],
+                             columns=["재배방법", "효과 계수 w", "적응력 내 상대 기여", "부트스트랩 95% 구간",
+                                      "방향", "점수화 범위 (0 ↔ 1)"]), "num")
+    cv = r["cv"]
+    t_cv = table(pd.DataFrame([[k, f"{v['AUC'][0]:.3f} ± {v['AUC'][1]:.3f}", f"{v['logloss']:.3f}"] for k, v in cv.items()],
+                              columns=["모형", "CV AUC", "CV 로그손실"]), "num")
+    t_auc = table(pd.DataFrame([["노출값만", f"{r['AUC_E']:.3f}"], ["1 − 적응력만", f"{r['AUC_A']:.3f}"],
+                                ["노출값 × (1 − 적응력)", f"{r['AUC_V_simple']:.3f}"],
+                                ["노출값 × 민감도 × (1 − 적응력)", f"{r['AUC_V']:.3f}"],
+                                ["유효 노출 × 민감도 × (1 − 적응력) (모형 구조 그대로)", f"{r['AUC_V_eff']:.3f}"]],
+                               columns=["지수", "발생 판별 AUC (학습 자료)"]), "num")
+    p = r["params"]
+    return {"v_t_sc": t_sc, "v_t_prev0": t_prev0, "v_t_prev1": t_prev1,
+            "v_curve": line_chart(series, "발생확률 감소", xlab="노출값"),
+            "v_sh_bar": bar_chart(sh_rows, "shap", fmt="{:.1f}"), "v_t_sh": t_sh, "v_t_int": t_int,
+            "v_w_bar": bar_chart(w_rows, "shap", fmt="{:.0f}"), "v_t_w": t_w, "v_t_cv": t_cv, "v_t_auc": t_auc,
+            "v_alpha": f"{p['alpha']:.2f}", "v_thx": f"{p['theta_x']:.2f}", "v_A_mean": f"{r['A_mean']:.2f}",
+            "v_base": f"{r['shapley_base'] * 100:.1f}"}
+
+
 def main(x4, r4, x3, r3, out):
     fill = build_fill(x3, r3)          # 피해도 회귀 섹션 (v3 결과)
     cfg = json.load(open(f"{r4}/configs.json"))
@@ -72,6 +151,7 @@ def main(x4, r4, x3, r3, out):
 
     fill.update(cls_fill("all", "ca"))
     fill.update(cls_fill("noweather", "cn"))
+    fill.update(vul_fill(r4))
     fill.update(n=len(d4), n1=npos, n0=len(d4) - npos, thr=f"{t:g}", thr_pct=f"{t * 100:g}",
                 thr_curve=line_chart(series, "AUC", xlab="임계값"), t_thr=t_thr, t_var=t_var,
                 nt_auc=f'{cfg["noweather_nt"]["cv_nested"]:.3f}', leg_cls=LEG_RISK.format(w="발생 위험"),
