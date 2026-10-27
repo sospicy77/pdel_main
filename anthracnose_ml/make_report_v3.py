@@ -55,7 +55,7 @@ def model_bar(rows, width=660, label_w=200):
     return "".join(out)
 
 
-def main(xlsx, rd, out):
+def build_fill(xlsx, rd):
     d = C.load(xlsx)
     n1 = int(d[C.Y1].sum())
     cls = json.load(open(f"{rd}/cls_final.json"))
@@ -155,6 +155,11 @@ def main(xlsx, rd, out):
         et_bar=bar_chart(et_rows, "shap"), leg_sev=LEG_RISK.format(w="피해"), deps=deps,
         t_rows=t_rows, t_sens=t_sens,
     )
+    return fill
+
+
+def main(xlsx, rd, out):
+    fill = build_fill(xlsx, rd)
     body = open(f"{HERE}/report_v3_body.html").read()
     for k, v in fill.items():
         body = body.replace("{{" + k + "}}", str(v))
