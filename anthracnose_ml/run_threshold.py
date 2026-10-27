@@ -52,6 +52,10 @@ def screen(path, outdir):
         d = relabel(d0, t)
         y = d[C.Y1].values
         for sname in ["A", "B"]:
+            part = f"{outdir}/thr_part_{t}_{sname}.csv"
+            if os.path.exists(part):   # 중단 후 재실행 시 끝난 조합은 건너뜀
+                rows += pd.read_csv(part).to_dict("records")
+                continue
             X = d[C.feature_sets(d, stage2=False)[sname]]
             cv = list(RepeatedStratifiedKFold(n_splits=N_SPLITS, n_repeats=N_REP, random_state=42).split(X, y))
             res = Parallel(n_jobs=4)(delayed(fold)(X, y, tr, te, i) for i, (tr, te) in enumerate(cv))
@@ -59,13 +63,16 @@ def screen(path, outdir):
             for i, out in enumerate(res):
                 for st, k, m, te, p in out:
                     preds.setdefault((st, k, m), np.full((N_REP, len(y)), np.nan))[i // N_SPLITS, te] = p
+            new = []
             for (st, k, m), P in preds.items():
                 for rep, p in enumerate(P):
-                    rows.append({"threshold": t, "n_pos": int(y.sum()), "prev": y.mean(), "set": sname,
+                    new.append({"threshold": t, "n_pos": int(y.sum()), "prev": y.mean(), "set": sname,
                                  "strategy": st, "k": k, "model": m, "rep": rep,
                                  "AUC": roc_auc_score(y, p), "PR_AUC": average_precision_score(y, p),
                                  "BalAcc": balanced_accuracy_score(y, p >= y.mean()),
                                  "Brier": brier_score_loss(y, p)})
+            pd.DataFrame(new).to_csv(part, index=False)
+            rows += new
             print(t, sname, "done", flush=True)
     r = pd.DataFrame(rows)
     r.to_csv(f"{outdir}/thr_screen_raw.csv", index=False)
