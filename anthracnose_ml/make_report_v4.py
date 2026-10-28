@@ -35,9 +35,13 @@ def vul_fill(r4):
     r = json.load(open(f"{r4}/vulnerability/vulnerability.json"))
     pct = lambda v: f"{v * 100:.1f}"
     ci = lambda c: f"{c[0] * 100:.1f}–{c[1] * 100:.1f}"
-    keys = [("현재 관행", "현재 관행"), ("7~8월_사전경과_최대 최선", "강우 전 방제 경과일 ≤ 2일"),
-            ("제초매트 최선", "제초매트 사용"), ("보호_카_횟수 최선", "보호살균제 10회 이상"),
-            ("7~8월_사후지연_최대 최선", "강우 후 방제 지연 ≤ 1일"), ("모두 최선 관행", "네 가지 모두 최선")]
+    # 시나리오 행: 분석에 들어간 관행만 (run_vulnerability 의 PRACTICES)
+    best_lab = {"7~8월_사전경과_최대": "강우 전 방제 경과일 ≤ 2일", "제초매트": "제초매트 사용",
+                "보호_카_횟수": "보호살균제 10회 이상", "7~8월_사후지연_최대": "강우 후 방제 지연 ≤ 1일"}
+    prs = list(r["params"]["w"])
+    n_word = {2: "두", 3: "세", 4: "네"}.get(len(prs), str(len(prs)))
+    keys = ([("현재 관행", "현재 관행")] + [(f"{p} 최선", best_lab[p]) for p in prs]
+            + [("모두 최선 관행", f"{n_word} 가지 모두 최선")])
 
     def sc_table(sc, sci, red=None):
         rows = []
@@ -62,8 +66,7 @@ def vul_fill(r4):
     g = r["curve_grid"]
     idx = list(range(0, len(g), 2))
     series = {nm: [(f"{g[i]:.1f}", r["curve"][k][i]) for i in idx]
-              for k, nm in [("모든 관행", "네 가지 모두"), ("7~8월_사전경과_최대", "강우 전 방제 경과일"),
-                            ("제초매트", "제초매트")]}
+              for k, nm in [("모든 관행", f"{n_word} 가지 모두")] + [(p, PR_LAB[p]) for p in prs]}
     sh = r["shapley"]["평균|기여|"]
     sh_rows = sorted([{"var": F_LAB[k], "shap": v * 100, "rho": F_DIR[k]} for k, v in sh.items() if v > 1e-4],
                      key=lambda x: -x["shap"])
@@ -98,7 +101,41 @@ def vul_fill(r4):
             "v_sh_bar": bar_chart(sh_rows, "shap", fmt="{:.1f}"), "v_t_sh": t_sh, "v_t_int": t_int,
             "v_w_bar": bar_chart(w_rows, "shap", fmt="{:.0f}"), "v_t_w": t_w, "v_t_cv": t_cv, "v_t_auc": t_auc,
             "v_alpha": f"{p['alpha']:.2f}", "v_thx": f"{p['theta_x']:.2f}", "v_A_mean": f"{r['A_mean']:.2f}",
-            "v_base": f"{r['shapley_base'] * 100:.1f}"}
+            "v_base": f"{r['shapley_base'] * 100:.1f}", **formula_fill(r), **adapt_table(r4)}
+
+
+def formula_fill(r):
+    """적응력·민감도 계산식을 추정값으로 만든다."""
+    p = r["params"]
+    sub = {"7~8월_사전경과_최대": "강우전경과", "제초매트": "제초매트", "보호_카_횟수": "보호살균제",
+           "7~8월_사후지연_최대": "강우후지연"}
+    a_terms = "".join(f"(1 − {w:.2f}·a<sub>{sub[k]}</sub>)" for k, w in p["w"].items())
+    th = p["theta"]
+    s_terms = (f"{th['작년_탄저발생']:.2f}·작년발생 + " if th["작년_탄저발생"] > 0.005 else "") + \
+        f"{th['연작']:.2f}·연작 + {th['인근고추밭_50m']:.2f}·인근고추밭 − {abs(p['beta_size']):.2f}·규모<sub>z</sub>"
+    return {"v_A_formula": f"A = 1 − {a_terms}", "v_S_formula": s_terms,
+            "v_n_prac": str(len(p["w"])), "v_npairs": str(len(p["w"]) * (len(p["w"]) - 1) // 2)}
+
+
+def adapt_table(r4):
+    """적응력 요소 후보 조합 비교표 (run_adapt_compare)."""
+    f = f"{r4}/vulnerability/adapt_compare.json"
+    if not os.path.exists(f):
+        return {"v_t_adapt": ""}
+    c = json.load(open(f))
+    rows = []
+    for name in sorted(k for k in c if k[:1] == "S"):
+        v = c[name]
+        ws = ", ".join(f"{PR_LAB.get(k, '방제강도 지수' if k == '방제강도_지수' else ('7월 살포횟수' if k == '7월_살포횟수' else ('살포일수' if k == '살포일수' else k)))} {w:.2f}"
+                       f"{' ✓' if v['w_ci'][k][0] > 0 else ''}" for k, w in v["w"].items())
+        rows.append([name.split(" ", 1)[0], name.split(" ", 1)[1], ws,
+                     f"{v['cv']['B 곱셈형']['AUC'][0]:.3f}", f"{v['cv']['A 로지스틱+E×관행']['AUC'][0]:.3f}",
+                     f"{v['cv']['B 곱셈형']['logloss']:.3f}", f"{v['AIC']:.1f}"])
+    return {"v_t_adapt": table(pd.DataFrame(rows, columns=["조합", "적응력 후보", "가중치 w (✓ = 95% 구간이 0 제외)",
+                                                          "CV AUC (곱셈형)", "CV AUC (로지스틱)", "CV 로그손실",
+                                                          "AIC"]), "num"),
+            "v_int_load": ", ".join(f"{k} {v:.2f}" for k, v in c.get("intensity_loadings", {}).items()),
+            "v_int_evr": f"{c.get('intensity_evr', 0) * 100:.0f}"}
 
 
 def main(x4, r4, x3, r3, out, body_file="report_v4_body.html", title="고추탄저병 최종 분석", tr=None):
