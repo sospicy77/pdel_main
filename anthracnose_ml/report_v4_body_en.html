@@ -14,8 +14,8 @@
   </div>
   <ul class="key">
     <li><b>Occurrence threshold:</b> We redefined occurrence from total severity using thresholds from 0 to 0.03 in steps of 0.005. Classification worked best when <b>severity above 3% counts as occurrence</b> (AUC 0.767 → 0.806). Farms with mild disease (severity ≤ 3%) look like disease-free farms in their predictors, so grouping them with the disease-free farms separates the two classes better.</li>
-    <li><b>All-variable model:</b> The main predictors are anthracnose last year, weed mat, spray delay after rain, July–August rainfall, exposure and June temperature. In the logistic model, <b class="up">June mean temperature</b> (odds ×2.42 per SD) and <b class="up">July–August rainfall</b> (×1.84) raise the risk, and a <b class="down">weed mat</b> (×0.26) lowers it (all p &lt; 0.05).</li>
-    <li><b>No-weather model:</b> Dropping the 10 weather variables and keeping only exposure gives AUC {{cn_auc}}, only 0.014 below the all-variable model. Exposure carries most of the weather information. In this model a <b class="down">weed mat</b> (×0.33) and <b class="down">farm size</b> (no. of plants, ×0.58) are significant, and <b class="up">exposure</b> (×1.52, p = 0.056) and <b class="up">disease last year</b> (×2.18) point toward higher risk.</li>
+    <li><b>All-variable model:</b> The main predictors are anthracnose last year, weed mat, spray delay after rain, July–August rainfall, exposure and June temperature. In the pre-specified logistic model, <b class="up">June mean temperature</b> (odds ×2.12 per SD, p = 0.008) raises the risk and a <b class="down">weed mat</b> (×0.30, p = 0.020) lowers it; <b class="up">July–August rainfall</b> (×1.73, p = 0.053) is borderline.</li>
+    <li><b>No-weather model:</b> Dropping the 10 weather variables and keeping only exposure gives AUC {{cn_auc}}, only 0.014 below the all-variable model. Exposure carries most of the weather information. In this model the <b class="down">weed mat</b> (×0.34, p = 0.024) is significant, and <b class="up">exposure</b> (×1.47, p = 0.07) and <b class="down">farm size</b> (no. of plants, ×0.63, p = 0.08) are borderline.</li>
     <li><b>Vulnerability analysis (Section 05):</b> Exposure raised the risk only on farms with anthracnose last year. At exposure 0.9, putting all four practices at their best lowers the occurrence probability from 38.9% to 15.6% (−23 pp), and from 56% to 24% (−32 pp) on farms with disease last year. Within adaptive capacity, keeping the days since the last spray before rain short (about 69%) and the weed mat (about 28%) carry most of the weight, and no synergy between practices was significant. The index Vulnerability = effective exposure × sensitivity × (1 − adaptive capacity) discriminates occurrence with AUC 0.84.</li>
     <li><b>Severity</b> is explained mostly by three variables: immediate removal of infected fruit (severity ×0.35), later first symptoms (×0.61 per 11 days) and the days from transplanting to first symptoms. Among 15 regression models on the v4 data, linear models (Huber, Ridge, ElasticNet; R² 0.56) did best, followed by the Gaussian process and ExtraTrees (0.53–0.54); boosting models reached 0.42–0.44. The nested CV R², free of selection bias, is 0.53 (Sections 06–08).</li>
   </ul>
@@ -51,13 +51,18 @@
     {{ca_bar}}
     <figcaption>Top 15 mean|SHAP| values of the final model (probability scale). Colour shows the direction, from the rank correlation between each variable and its SHAP values.</figcaption>
   </figure>
-  <h3>Effect sizes (logistic regression on 9 core variables)</h3>
+  <h3>Effect sizes (pre-specified model, {{ca_nspec}} variables)</h3>
+  <p>Odds ratios estimated after selecting variables on the same data are inflated, and their p-values and confidence intervals are not valid. We therefore fixed the variables in advance, independent of the results, using the vulnerability framework (exposure, sensitivity, adaptive capacity; Section 05): exposure, three sensitivity variables (disease last year, continuous cropping, nearby pepper field), four adaptive practices (days since spray before rain, spray delay after rain, weed mat, protectant sprays) and farm size as an adjustment, plus two weather representatives (July–August rainfall, June mean temperature). With only {{ca_epv}} events per variable, we used Firth-penalized logistic regression, which reduces coefficient inflation.</p>
   <figure>
     {{leg_or}}
     {{ca_forest}}
-    <figcaption>Odds ratios from a logistic regression that keeps one representative per cluster of correlated weather and spray variables (VIF &lt; 2). Continuous variables per 1 SD, binary variables 0→1. * p &lt; 0.05. Pseudo-R² {{ca_pr2}}; CV AUC of the same variables {{ca_core_auc}}.</figcaption>
+    <figcaption>Firth-penalized logistic odds ratios of the pre-specified model. Continuous variables per 1 SD, binary variables 0→1. * p &lt; 0.05. CV AUC of the same model {{ca_core_auc}} (for reference, maximum-likelihood pseudo-R² {{ca_pr2}}).</figcaption>
   </figure>
   {{ca_or}}
+  <p>June mean temperature (×2.12 per SD, p = 0.008) and the weed mat (×0.30, p = 0.020) were significant, and July–August rainfall (×1.73, p = 0.053) was borderline. The other variables point in the expected direction, but their confidence intervals include 1. All VIFs are below 2.</p>
+  <p><b>Strength of evidence for each variable.</b> Stability selection frequencies over all {{ca_ncand}} candidate variables of the final ML model (500 half-size subsamples × L1 regularization path). The regularization range is limited so that on average at most 5 variables are selected; with a frequency cut-off of 0.7, the expected number of falsely selected variables is at most {{ca_ev}}. Frequency ≥ 0.7 is labelled "strong", 0.4–0.7 "moderate" and below 0.4 "weak".</p>
+  {{ca_stab}}
+  <p class="note">The two measures answer different questions. Stability selection frequency asks "is the variable picked consistently when only a few of many correlated candidates are chosen?"; the Firth odds ratio asks "how large is its effect after adjusting for the pre-specified variables?". For example, the weed mat has a low frequency (0.30) but a significant adjusted effect (p = 0.02), while July–August rainfall has a high frequency (0.61) and a borderline adjusted effect. Evidence is strongest for variables that score high on both.</p>
   <p>In raw rates, 11% of farms with ≤ 120 mm of July–August rain exceeded 3% severity, against 40% of farms with &gt; 200 mm. The rate was 40% on farms with disease last year (20% without) and 21% on farms using a weed mat (36% without).</p>
 </section>
 
@@ -71,14 +76,17 @@
     {{cn_bar}}
     <figcaption>Top 15 mean|SHAP| values of the no-weather model. Days since the last spray before rain and exposure matter most, followed by farm size and July spray count.</figcaption>
   </figure>
-  <h3>Effect sizes (7 core variables, no weather)</h3>
+  <h3>Effect sizes (pre-specified model, {{cn_nspec}} variables)</h3>
+  <p>Odds ratios estimated after selecting variables on the same data are inflated, and their p-values and confidence intervals are not valid. We therefore fixed the variables in advance, independent of the results, using the vulnerability framework (exposure, sensitivity, adaptive capacity; Section 05): exposure, three sensitivity variables (disease last year, continuous cropping, nearby pepper field), four adaptive practices (days since spray before rain, spray delay after rain, weed mat, protectant sprays) and farm size as an adjustment. With only {{cn_epv}} events per variable, we used Firth-penalized logistic regression, which reduces coefficient inflation.</p>
   <figure>
     {{leg_or}}
     {{cn_forest}}
-    <figcaption>Odds ratios from a logistic regression on exposure, the two rain-spray timing variables, disease last year, weed mat, farm size and protectant sprays. * p &lt; 0.05. Pseudo-R² {{cn_pr2}}; CV AUC {{cn_core_auc}}.</figcaption>
+    <figcaption>Firth-penalized logistic odds ratios of the pre-specified model. Continuous variables per 1 SD, binary variables 0→1. * p &lt; 0.05. CV AUC of the same model {{cn_core_auc}} (for reference, maximum-likelihood pseudo-R² {{cn_pr2}}).</figcaption>
   </figure>
   {{cn_or}}
-  <p>42% of farms with exposure above 0.95 exceeded 3% severity, against 22–27% in the lower bands. Without the weather variables, the odds ratio of exposure rises from 1.13 to 1.52: exposure takes over the effect it shared with the weather variables in the all-variable model.</p>
+  <p>42% of farms with exposure above 0.95 exceeded 3% severity, against 22–27% in the lower bands. Without the weather variables, the odds ratio of exposure rises from 1.11 to 1.47 (p = 0.07): exposure takes over the effect it shared with the weather variables in the all-variable model. In this model the weed mat (×0.34, p = 0.024) is significant and farm size (×0.63, p = 0.08) is borderline.</p>
+  <p><b>Strength of evidence for each variable.</b> Stability selection frequencies over all {{cn_ncand}} candidate variables of the final ML model (500 half-size subsamples × L1 regularization path). The regularization range is limited so that on average at most 5 variables are selected; with a frequency cut-off of 0.7, the expected number of falsely selected variables is at most {{cn_ev}}. Frequency ≥ 0.7 is labelled "strong", 0.4–0.7 "moderate" and below 0.4 "weak".</p>
+  {{cn_stab}}
 </section>
 
 <section>

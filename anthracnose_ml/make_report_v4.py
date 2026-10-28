@@ -131,8 +131,14 @@ def main(x4, r4, x3, r3, out, body_file="report_v4_body.html", title="고추탄�
     def variant(name):
         c = cfg[name]
         j = json.load(open(f"{r4}/{name}/cls_final.json"))
-        ef = f"{r4}/{name}/effects.json" if name == "all" else f"{r4}/{name}/effects_noweather.json"
-        e = json.load(open(ef))["cls"]
+        # 오즈비: 사전 지정 모형(run_prespec)이 있으면 그것을, 없으면 이전 핵심변수 모형을 사용
+        pf = f"{r4}/{name}/prespec.json"
+        if os.path.exists(pf):
+            e = json.load(open(pf))
+            e = {**e["cls"], "_pre": e}
+        else:
+            ef = f"{r4}/{name}/effects.json" if name == "all" else f"{r4}/{name}/effects_noweather.json"
+            e = json.load(open(ef))["cls"]
         return c, j, e
 
     V = {n: variant(n) for n in ["all", "noweather", "noweather_nt"]}
@@ -142,11 +148,27 @@ def main(x4, r4, x3, r3, out, body_file="report_v4_body.html", title="고추탄�
                                  f'{e["cv_auc"][0]:.3f}']
                                 for n, (c, j, e) in V.items()],
                                columns=["모델", "후보 변수 수", "최종 설정", "AUC (선택 포함 CV)", "AUC (변수 고정)",
-                                        "핵심변수 로지스틱 AUC"]), "num")
+                                        "사전 지정 로지스틱 AUC (Firth)"]), "num")
+
+    def stab_table(e, n_other=6):
+        pre = e.get("_pre")
+        if not pre:
+            return ""
+        freq, roles = pre["stability"]["freq"], pre["roles"]
+        level = lambda f: "강함" if f >= 0.7 else ("중간" if f >= 0.4 else "약함")
+        rows = [[v, roles[v], f"{freq.get(v, 0):.2f}", level(freq.get(v, 0)), "포함"]
+                for v in sorted(pre["spec"], key=lambda v: -freq.get(v, 0))]
+        others = [v for v in freq if v not in pre["spec"]][:n_other]
+        rows += [[v, "-", f"{freq[v]:.2f}", level(freq[v]), "-"] for v in others]
+        return table(pd.DataFrame(rows, columns=["변수", "역할", "안정성 선택 빈도", "근거 강도", "사전 지정 모형"]), "num")
 
     def cls_fill(name, pre):
         c, j, e = V[name]
-        return {f"{pre}_cfg": f'{STRAT[c["strategy"]]}로 고른 변수 {c["k"]}개 · {MODEL[c["model"]]}',
+        pp = e.get("_pre", {})
+        st = pp.get("stability", {})
+        return {f"{pre}_stab": stab_table(e), f"{pre}_epv": f'{pp.get("epv", 0):.1f}',
+                f"{pre}_nspec": str(len(pp.get("spec", []))), f"{pre}_ev": f'{st.get("EV_bound", 0):.1f}',
+                f"{pre}_ncand": str(st.get("n_candidates", 0)),f"{pre}_cfg": f'{STRAT[c["strategy"]]}로 고른 변수 {c["k"]}개 · {MODEL[c["model"]]}',
                 f"{pre}_auc": f'{c["cv_nested"]:.3f}', f"{pre}_auc_fixed": f'{j["perf_fixed"]["AUC"]["mean"]:.3f}',
                 f"{pre}_bar": bar_chart(imp_rows(j)[:15], "shap"), f"{pre}_forest": forest(e["table"]),
                 f"{pre}_or": or_table(e["table"]), f"{pre}_core_auc": f'{e["cv_auc"][0]:.3f}',
