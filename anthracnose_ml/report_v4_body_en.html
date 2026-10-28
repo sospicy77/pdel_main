@@ -16,7 +16,7 @@
     <li><b>Occurrence threshold:</b> We redefined occurrence from total severity using thresholds from 0 to 0.03 in steps of 0.005. Classification worked best when <b>severity above 3% counts as occurrence</b> (AUC 0.767 → 0.806). Farms with mild disease (severity ≤ 3%) look like disease-free farms in their predictors, so grouping them with the disease-free farms separates the two classes better.</li>
     <li><b>All-variable model:</b> The main predictors are anthracnose last year, weed mat, spray delay after rain, July–August rainfall, exposure and June temperature. In the pre-specified logistic model, <b class="up">June mean temperature</b> (odds ×2.12 per SD, p = 0.008) raises the risk and a <b class="down">weed mat</b> (×0.30, p = 0.020) lowers it; <b class="up">July–August rainfall</b> (×1.73, p = 0.053) is borderline.</li>
     <li><b>No-weather model:</b> Dropping the 10 weather variables and keeping only exposure gives AUC {{cn_auc}}, only 0.014 below the all-variable model. Exposure carries most of the weather information. In this model the <b class="down">weed mat</b> (×0.34, p = 0.024) is significant, and <b class="up">exposure</b> (×1.47, p = 0.07) and <b class="down">farm size</b> (no. of plants, ×0.63, p = 0.08) are borderline.</li>
-    <li><b>Vulnerability analysis (Section 05):</b> Exposure raised the risk only on farms with anthracnose last year. At exposure 0.9, putting all four practices at their best lowers the occurrence probability from 38.9% to 15.6% (−23 pp), and from 56% to 24% (−32 pp) on farms with disease last year. Within adaptive capacity, keeping the days since the last spray before rain short (about 69%) and the weed mat (about 28%) carry most of the weight, and no synergy between practices was significant. The index Vulnerability = effective exposure × sensitivity × (1 − adaptive capacity) discriminates occurrence with AUC 0.84.</li>
+    <li><b>Vulnerability analysis (Section 05):</b> Exposure raised the risk only on farms with anthracnose last year. After comparing 9 candidate sets, adaptive capacity uses two practices: days since spray before rain and the weed mat (spray-intensity variables added nothing once timing was in the model). At exposure 0.9, putting both practices at their best lowers the occurrence probability from 38.9% to 16.1% (−23 pp), and from 57% to 25% (−32 pp) on farms with disease last year. Days since spray before rain accounts for about 72% of adaptive capacity and the weed mat for about 28%. The index Vulnerability = effective exposure × sensitivity × (1 − adaptive capacity) discriminates occurrence with AUC 0.84.</li>
     <li><b>Severity</b> is explained mostly by three variables: immediate removal of infected fruit (severity ×0.35), later first symptoms (×0.61 per 11 days) and the days from transplanting to first symptoms. Among 15 regression models on the v4 data, linear models (Huber, Ridge, ElasticNet; R² 0.56) did best, followed by the Gaussian process and ExtraTrees (0.53–0.54); boosting models reached 0.42–0.44. The nested CV R², free of selection bias, is 0.53 (Sections 06–08).</li>
   </ul>
 </section>
@@ -93,41 +93,51 @@
   <h2><span class="no">05</span>Vulnerability analysis: exposure × sensitivity × (1 − adaptive capacity)</h2>
   <p>We fitted a model of the occurrence probability (severity &gt; 3%) with the same structure as the vulnerability formula. From it we computed the reduction in occurrence probability per practice, each variable's contribution, how practice effects change with exposure, and an adaptive-capacity index.</p>
   <ul class="key">
-    <li><b>Exposure (E):</b> the exposure value. <b>Sensitivity (S):</b> disease last year, continuous cropping and a pepper field within 50 m (conditions a farm cannot change in the short term), plus farm size (no. of plants) as an adjustment. <b>Adaptive capacity (A):</b> four practices that bootstrap stability selection (L1 logistic, 300 resamples) picked consistently: days since spray before rain (89%), weed mat (81%), protectant sprays (51%) and spray delay after rain (43%).</li>
-    <li><b>Practice score a (0 = worst, 1 = best):</b> weed mat used = 1. Protectant sprays: 0 → 0, 10 or more → 1. Days since spray before rain (Jul–Aug max): 27 or more → 0, 2 or fewer → 1. Spray delay after rain (max): 45 or more → 0, 1 or fewer → 1. Linear in between.</li>
-    <li><b>Model:</b> P(occurrence) = 1 − exp(−H), H = λ · E<sup>α</sup> · S(E) · (1 − A). Adaptive capacity starts from the rule that practices act independently, A = 1 − Π(1 − w<sub>j</sub>·a<sub>j</sub>); pairwise synergy or overlap terms were added only if a likelihood-ratio test supported them. Uncertainty comes from 300 bootstrap resamples.</li>
+    <li><b>Exposure (E):</b> the exposure value. <b>Sensitivity (S):</b> disease last year, continuous cropping and a pepper field within 50 m (conditions a farm cannot change in the short term), plus farm size (no. of plants) as an adjustment. <b>Adaptive capacity (A):</b> two practices, days since spray before rain and weed mat (see the comparison table below for the selection).</li>
+    <li><b>Practice score a (0 = worst, 1 = best):</b> weed mat used = 1. Days since spray before rain (Jul–Aug max): 27 or more → 0, 2 or fewer → 1, linear in between.</li>
+    <li><b>Model:</b> P(occurrence) = 1 − exp(−H), H = λ · E<sup>α</sup> · S(E) · (1 − A). Adaptive capacity starts from the rule that practices act independently, A = 1 − Π(1 − w<sub>j</sub>·a<sub>j</sub>); a synergy or overlap term between the two practices was tested with a likelihood-ratio test. Uncertainty comes from 300 bootstrap resamples.</li>
   </ul>
+
+  <h3>Selecting the adaptive-capacity components: comparison of candidate sets</h3>
+  <p>In the no-weather RF model, spray-intensity variables such as July spray count, spray days and protectant sprays had high SHAP importance, while the weed mat and days since spray before rain ranked lower. We therefore compared 9 candidate sets in the same vulnerability model, including the top SHAP variables, spray-intensity representatives (spray days, or an index of 6 spray variables) and the previous stability-selection set (repeated stratified 5-fold × 10; weights from 200 bootstrap resamples).</p>
+  {{v_t_adapt}}
+  <ul class="key">
+    <li><b>S9 (days since spray before rain + weed mat)</b> had the best CV AUC (0.759) and AIC (148.3), and in this comparison it was the only set whose two weights both had 95% intervals excluding 0.</li>
+    <li><b>Spray intensity acts through timing.</b> Whenever days since spray before rain was in the model, the weights of the spray-intensity variables (spray days, July spray count, index) were 0 in every set. Without it, spray intensity took over part of the effect (weight 0.34–0.37), but performance fell to 0.70 (S7, S8). More sprays shorten the days before rain (ρ −0.57 to −0.63), so what matters is whether fungicide was on the plants just before rain, more than the number of sprays.</li>
+    <li><b>Taking the SHAP ranking at face value (S2) did worst</b> (AIC 155.8). The six spray variables repeat the same information (correlations 0.6–0.9), and RF splits importance among them, so several reach the top individually. RF SHAP also tends to rate binary variables (weed mat) low. SHAP is useful for finding which group of variables matters (the spray-intensity group has the largest combined SHAP, 0.122), but it is not the right criterion for choosing the independent components of a vulnerability formula.</li>
+  </ul>
+  <p class="note">The spray-intensity index is the first principal component of the 6 standardized spray variables and explains {{v_int_evr}}% of their variance. Loadings: {{v_int_load}}.</p>
 
   <h3>Tests of the model structure</h3>
   <ul class="key">
-    <li><b>Exposure raises the risk only when inoculum is present.</b> The exposure exponent α is {{v_alpha}}, close to 0, and almost all of the exposure effect enters through the "disease last year × exposure" term (θ<sub>x</sub> = {{v_thx}}). Without this term, the model predicted 53% for high-exposure farms with disease last year (observed 74%); with it, 66% (likelihood-ratio test p ≈ 0.03). Farms without disease last year have a current occurrence probability of 22–25% whether exposure is 0.1 or 0.9.</li>
-    <li><b>Multiplying by exposure linearly (α = 1) does not fit the data</b> (CV AUC 0.64 vs 0.74). For the vulnerability calculation we therefore recommend the model's <b>effective exposure</b>, E<sub>eff</sub> = E<sup>α</sup> · exp(θ<sub>x</sub> · disease last year · E), rescaled to 0–1, instead of the raw exposure value.</li>
-    <li><b>No synergy or overlap between practices was significant</b> (all 6 pairs p &gt; 0.27). The independent-action rule 1 − Π(1 − w·a) is enough. Under this rule a second practice adds less once the risk is already low, which shows up as a negative joint contribution in the Shapley table below (weed mat × days since spray before rain, −0.15).</li>
+    <li><b>Exposure raises the risk only when inoculum is present.</b> The exposure exponent α is {{v_alpha}}, close to 0, and almost all of the exposure effect enters through the "disease last year × exposure" term (θ<sub>x</sub> = {{v_thx}}, 95% interval 0.04–2.77). High-exposure farms with disease last year have an observed rate of 74% against a predicted 66%. Farms without disease last year have a current occurrence probability of 22–24% whether exposure is 0.1 or 0.9.</li>
+    <li><b>Multiplying by exposure linearly (α = 1) does not fit the data</b> (CV AUC 0.64 vs 0.76). For the vulnerability calculation we therefore recommend the model's <b>effective exposure</b>, E<sub>eff</sub> = E<sup>α</sup> · exp(θ<sub>x</sub> · disease last year · E), rescaled to 0–1, instead of the raw exposure value.</li>
+    <li><b>No synergy or overlap between the two practices was significant</b> (p = 0.95). The independent-action rule 1 − Π(1 − w·a) is enough.</li>
   </ul>
   {{v_t_cv}}
-  <p class="note">The multiplicative model and the logistic model with exposure × practice interactions have the same CV AUC (0.74), so the data cannot tell the two structures apart; we chose the multiplicative one because it matches the vulnerability formula. Both are below the full ML model (Section 04, 0.79), the price of keeping 9 variables and a fixed structure.</p>
+  <p class="note">The multiplicative model (0.759) matched or slightly beat the logistic model with exposure × practice interactions (0.743), and we chose it because it matches the vulnerability formula. It is below the full ML model (Section 04, 0.79), the price of keeping 7 variables and a fixed structure.</p>
 
   <h3>How much do practices lower the occurrence probability at high exposure?</h3>
   <p>Mean occurrence probability when every one of the 141 farms is set to exposure 0.1, 0.5 or 0.9, each farm keeps its own sensitivity, and only the practices change (g-computation). Parentheses show the reduction from current practice (pp) and the relative reduction; brackets show the bootstrap 95% interval of the reduction.</p>
   {{v_t_sc}}
   <ul class="key">
-    <li>At exposure 0.9, putting all four practices at their best lowers the occurrence probability from 38.9% to 15.6%, <b>a 23 pp (60%) reduction</b> (95% interval 11.5–43.7 pp). The reduction is 16.6 pp at exposure 0.1 and 20.9 pp at 0.5: <b>the higher the exposure, the larger the absolute reduction from the same practices</b>.</li>
-    <li>The largest single practice is <b>keeping the days since the last spray before rain at 2 or fewer</b> (−17 pp at exposure 0.9), followed by the <b>weed mat</b> (−6.6 pp). The 95% intervals of all single practices include 0, because the practices substitute for each other and the data cannot say which one did the work.</li>
+    <li>At exposure 0.9, putting both practices at their best lowers the occurrence probability from 38.9% to 16.1%, <b>a 22.8 pp (59%) reduction</b> (95% interval 9.6–43.7 pp). The reduction is 16.3 pp at exposure 0.1 and 20.6 pp at 0.5: <b>the higher the exposure, the larger the absolute reduction from the same practices</b>.</li>
+    <li><b>Keeping the days since spray before rain at 2 or fewer</b> lowers the probability by 18.2 pp at exposure 0.9, and at exposure 0.5 and 0.9 the lower bound of its 95% interval is above 0 (0.1 pp). The <b>weed mat</b> lowers it by 6.5 pp, with a 95% interval that includes 0.</li>
   </ul>
   <h3>Scenarios by disease last year</h3>
   <p><b>Farms with anthracnose last year</b> (disease last year set to 1)</p>
   {{v_t_prev1}}
   <p><b>Farms without anthracnose last year</b> (disease last year set to 0)</p>
   {{v_t_prev0}}
-  <p>On farms with disease last year, the occurrence probability at exposure 0.9 is 56% under current practice and 24% with all four practices at their best, a <b>32 pp</b> reduction. Keeping the days since spray before rain at 2 or fewer alone gives 34% (−23 pp). Adaptive practices pay off most on high-exposure farms that carry inoculum.</p>
+  <p>On farms with disease last year, the occurrence probability at exposure 0.9 is 56.6% under current practice and 24.8% with both practices at their best, a <b>31.8 pp</b> reduction. Keeping the days since spray before rain at 2 or fewer alone gives 32.3% (−24.3 pp). Adaptive practices pay off most on high-exposure farms that carry inoculum.</p>
 
   <h3>How practice effects change with exposure</h3>
   <figure>
-    <div class="legend"><span><i style="background:var(--s1)"></i>All four practices</span><span><i style="background:var(--s2)"></i>Days since spray before rain</span><span><i style="background:var(--s3)"></i>Weed mat</span></div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Both practices</span><span><i style="background:var(--s2)"></i>Days since spray before rain</span><span><i style="background:var(--s3)"></i>Weed mat</span></div>
     {{v_curve}}
-    <figcaption>Mean reduction in occurrence probability when a practice moves from worst (score 0) to best (1) (0.10 = 10 pp). The effect grows quickly between exposure 0 and 0.3 and is nearly flat above. Protectant sprays stay at or below 2.7 pp; spray delay after rain is 0.</figcaption>
+    <figcaption>Mean reduction in occurrence probability when a practice moves from worst (score 0) to best (1) (0.10 = 10 pp). The effect grows quickly between exposure 0 and 0.3 and is nearly flat above. Days since spray before rain reaches about 42 pp and the weed mat about 14 pp.</figcaption>
   </figure>
-  <p class="note">In the multiplicative structure, the relative reduction does not depend on exposure, and the absolute reduction (pp) grows with the baseline risk. In the logistic model that estimates exposure × practice interactions directly, the protectant-spray effect grew from 4 pp to 14 pp with exposure. Two models with the same performance split the effect between practices differently, so <b>the split between practices is uncertain while the total adaptive effect is robust</b>.</p>
+  <p class="note">In the multiplicative structure, the relative reduction does not depend on exposure, and the absolute reduction (pp) grows with the baseline risk.</p>
 
   <h3>Each variable's contribution to the occurrence probability (pp)</h3>
   <figure>
@@ -136,7 +146,7 @@
     <figcaption>Mean absolute probability-scale Shapley value across farms: the gap between the mean occurrence probability of the 141 farms ({{v_base}}%) and each farm's predicted probability, split by variable.</figcaption>
   </figure>
   {{v_t_sh}}
-  <p>Exposure contributes −6.5 pp on low-exposure farms and +10.9 pp on high-exposure farms. Among joint contributions (Shapley interactions), <b>exposure × disease last year</b> dominates with a mean of 6.7 pp.</p>
+  <p>The largest contributions come from days since spray before rain (8.5 pp), farm size (7.7 pp), exposure (7.5 pp), disease last year (6.8 pp) and the weed mat (6.7 pp). Exposure contributes −6.5 pp on low-exposure farms and +10.9 pp on high-exposure farms. Among joint contributions (Shapley interactions), <b>exposure × disease last year</b> dominates with a mean of 6.8 pp.</p>
   {{v_t_int}}
 
   <h3>Adaptive-capacity index and vulnerability</h3>
@@ -147,13 +157,15 @@
   {{v_t_w}}
   <div class="callout">
     <p><b>Vulnerability formula (occurrence = severity above 3%)</b></p>
-    <p>A = 1 − (1 − 0.82·a<sub>days since spray before rain</sub>)(1 − 0.51·a<sub>weed mat</sub>)(1 − 0.12·a<sub>protectant</sub>)(1 − 0·a<sub>delay after rain</sub>)</p>
-    <p>E<sub>eff</sub> = E<sup>{{v_alpha}}</sup> · exp({{v_thx}} · disease last year · E) / max,  S = exp(0.15·continuous cropping + 0.41·nearby pepper field − 0.46·size<sub>z</sub>) / max</p>
+    <p>{{v_A_formula}}</p>
+    <p>E<sub>eff</sub> = E<sup>{{v_alpha}}</sup> · exp({{v_thx}} · disease last year · E) / max</p>
+    <p>S = exp({{v_S_formula}}) / max</p>
     <p>Vulnerability V = E<sub>eff</sub> × S × (1 − A),  occurrence probability ≈ 1 − exp(−λ·V′)  (V′ = V before rescaling)</p>
+    <p class="note">size<sub>z</sub> = (log no. of plants − mean) / SD. A farm 1 SD larger has S multiplied by exp(−0.46) ≈ 0.63, an adjustment toward lower risk. Disease last year has a zero main-effect coefficient and enters only through its product with exposure (effective exposure).</p>
   </div>
   {{v_t_auc}}
-  <p>Mean adaptive capacity is {{v_A_mean}}, lower on diseased farms (0.56) than on disease-free farms (0.73). The originally proposed form, exposure × (1 − adaptive capacity), discriminates with only AUC 0.63, while the form with effective exposure and sensitivity reaches 0.84 (training data), so we recommend the latter as the vulnerability index.</p>
-  <p class="note">Limitations: (1) With only 40 events, the 95% intervals of the practice weights are wide. The ranking (days since spray before rain &gt; weed mat &gt; protectant sprays) is indicative; what is robust is the effect of the practices together. (2) This is observational survey data, so the reductions are associations predicted by the model, not causal effects. For example, if high-risk farms sprayed protectants more, the protectant effect is underestimated. (3) Extreme scenarios such as "all worst" extrapolate beyond the data and are left out of the tables.</p>
+  <p>Mean adaptive capacity is {{v_A_mean}}, lower on diseased farms (0.55) than on disease-free farms (0.73). The originally proposed form, exposure × (1 − adaptive capacity), discriminates with only AUC 0.63, while the form with effective exposure and sensitivity reaches 0.84 (training data), so we recommend the latter as the vulnerability index.</p>
+  <p class="note">Limitations: (1) With only 40 events, the weight intervals are wide. The interval for days since spray before rain (0.04–1.0) excludes 0, while the lower bound for the weed mat sits at the boundary (0–0.05 depending on the bootstrap). (2) This is observational survey data, so the reductions are associations predicted by the model, not causal effects. (3) Extreme scenarios such as "all worst" extrapolate beyond the data and are left out of the tables.</p>
 </section>
 
 <section>
@@ -227,7 +239,7 @@
   <ul class="key">
     <li><b>Occurrence threshold:</b> The predictors separate farms best when occurrence is defined as severity above 3% (AUC 0.81). Mild disease (≤ 3%) is hard to tell apart from no disease with these predictors.</li>
     <li><b>Occurrence risk factors:</b> June temperature, July–August rainfall and disease last year raise the risk; a weed mat and spraying promptly around rain lower it. Using exposure alone instead of the weather variables gives nearly the same accuracy (AUC 0.79), so an exposure-based model is the practical choice in the field.</li>
-    <li><b>Vulnerability:</b> The highest-risk group is high-exposure farms that had anthracnose last year. On these farms, adaptive practices such as spraying shortly before rain (≤ 2 days) and using a weed mat lower the occurrence probability the most. The vulnerability index should use effective exposure, which accounts for disease last year, rather than raw exposure.</li>
+    <li><b>Vulnerability:</b> The highest-risk group is high-exposure farms that had anthracnose last year. On these farms, adaptive practices such as spraying shortly before rain (≤ 2 days) and using a weed mat lower the occurrence probability the most. Whether fungicide was on the plants just before rain matters more than the number of sprays. The vulnerability index should use effective exposure, which accounts for disease last year, rather than raw exposure.</li>
     <li><b>Severity:</b> Immediate removal of infected fruit and the timing of first symptoms determine the severity after onset; three variables explain about 53–58% of the variation in log severity (v3: 46–52%). The v4 corrections removed the prediction errors of the corrected farms.</li>
   </ul>
   <p class="note">Code: repository <code>anthracnose_ml/</code>. Threshold-based classification: <code>run_v4.py</code> (runs <code>run_threshold.py</code> → <code>run_selection2.py</code> → <code>run_final.py</code> → <code>run_effects.py</code>); vulnerability: <code>run_vulnerability.py</code>; severity regression: <code>run_reg_v4.py</code> (runs <code>run_reg_final.py</code>); report: <code>make_report_v4.py</code> / <code>make_report_v4_en.py</code>.</p>
