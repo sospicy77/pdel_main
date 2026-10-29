@@ -4,6 +4,7 @@
 - 학습 fold 안에서 변수 중요도 순위 계산 (XGB·RF SHAP + 정규화 선형모형 계수의 평균 순위)
 - top-k 변수로 모델 학습·예측
 """
+import os
 import warnings
 
 import numpy as np
@@ -49,6 +50,8 @@ def feature_sets(d, stage2):
         "A_nt": [c for c in base if c not in RAIN_TIMING],
         # B 에서 노출값만 뺀 세트: 기상·방제 변수만으로 본 발생 모형
         "B_ne": [c for c in base + WEATHER if c != "노출값"],
+        # A 에 기상 변수 몇 개만 더한 세트 (EXTRA_WEATHER=변수1,변수2)
+        "A_plus": base + [v for v in os.environ.get("EXTRA_WEATHER", "").split(",") if v],
     }
 
 
