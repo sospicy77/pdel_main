@@ -141,7 +141,8 @@ def adapt_table(r4):
 def main(x4, r4, x3, r3, out, body_file="report_v4_body.html", title="고추탄저병 최종 분석", tr=None):
     """tr: 생성된 표·그림 문자열에 적용할 번역 함수 (영문 보고서용)."""
     # 피해도 회귀 섹션: v4 회귀 결과가 있으면 그것을, 없으면 v3 결과를 사용
-    reg_dir = f"{r4}/reg" if os.path.exists(f"{r4}/reg/reg3_et7.json") else r3
+    # 초발 시기 변수(피해 진행과 같은 성격)를 뺀 재분석(reg_noonset)을 우선 사용
+    reg_dir = next((f"{r4}/{sub}" for sub in ["reg_noonset", "reg"] if os.path.exists(f"{r4}/{sub}/reg3_et7.json")), r3)
     fill = build_fill(x4 if reg_dir != r3 else x3, reg_dir)
     cfg = json.load(open(f"{r4}/configs.json"))
     t = cfg["threshold"]
