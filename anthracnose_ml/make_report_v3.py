@@ -122,7 +122,8 @@ def build_fill(xlsx, rd):
     # Ridge 계수
     dd = d[d[C.Y1] == 1].reset_index(drop=True)
     coef = R["ridge"].get("coef_std", {})
-    if coef and len(coef) <= 5:
+    # 선형 대표 모델이 커널 모델과 같은 핵심 변수를 고르면 CI·p 를 주는 OLS 로 통일
+    if coef and len(coef) <= 5 and set(coef) != set(R["krr"]["selected"]):
         t_coef = table(pd.DataFrame([[v, "0→1" if dd[v].nunique() == 2 else f"+1 SD ({dd[v].std():.1f})",
                                       f"{c:+.3f}", f"×{10 ** c:.2f}"] for v, c in coef.items()],
                                     columns=["변수", "단위", "log10 계수 (표준화)", "피해도 배수"]), "num")

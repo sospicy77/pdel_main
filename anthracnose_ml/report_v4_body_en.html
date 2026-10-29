@@ -175,50 +175,50 @@
 
 <section>
   <h2><span class="no">06</span>Severity regression: model comparison (Y2)</h2>
-  <p>We analysed the 60 diseased farms (severity &gt; 0) of the v4 data. The response is Y2 total severity. <b>First-symptom DOY and days transplant→first symptom were removed from the predictors.</b> Earlier first symptoms naturally mean a longer epidemic and higher final severity, so these two variables describe the same thing as the response (disease progress) and cannot explain which cropping or environmental factors raise damage. Immediate removal of infected fruit is a management response after onset and stays as a predictor (36 candidates).</p>
+  <p>We analysed the 60 diseased farms (severity &gt; 0) of the v7 data. The response is Y2 total severity. <b>First-symptom DOY and days transplant→first symptom were removed from the predictors.</b> Earlier first symptoms naturally mean a longer epidemic and higher final severity, and a short interval from transplanting to first symptoms also means early first symptoms. Both correlate strongly with severity and were picked by the earlier models, but they describe the same thing as the response (disease progress), so they cannot explain which cropping or environmental factors raise damage. Immediate removal of infected fruit is a management response after onset and stays as a predictor (36 candidates).</p>
   <figure>
     <div class="legend"><span><i style="background:var(--fam1)"></i>Linear · ensemble</span><span><i style="background:var(--fam2)"></i>Kernel · distance</span><span><i style="background:var(--fam3)"></i>Tree</span><span><i style="background:var(--fam4)"></i>Boosting</span></div>
     {{model_bar}}
     <figcaption>Best cross-validated R² per model (log10 Y2, variable set A, 5-fold × 10 repeats). Each model uses its best number of variables among k = 3, 5, 7, 10, 15 and all.</figcaption>
   </figure>
   {{t_models}}
-  <p>Removing the onset-timing variables lowered performance markedly (best R² 0.56 → 0.39), showing how much of the severity variation they carried. This time <b>ExtraTrees (tuned, 15 variables, 0.392)</b> did best, followed by default ExtraTrees (0.365), Random Forest (0.322) and CatBoost (0.308). Linear and kernel models (0.26–0.30) and the other boosting models (0.21–0.26) were lower. Without the strong linear signal of onset timing, tree models that capture non-linear and interaction effects of the remaining variables gained the edge. Averaging the top 3 models (0.375) did not beat the single best model.</p>
+  <p><b>ExtraTrees (tuned, 15 variables, 0.426)</b> did best, followed by default ExtraTrees (0.417), Random Forest (0.374) and CatBoost/LightGBM (0.36). Linear and kernel models reached 0.33–0.36 with only the three core variables, about 0.07 below the tree models. Averaging the top 3 models (0.419) did not beat the single best model. Performance is higher overall than on the v4 data (best 0.392, linear 0.26–0.30), because correcting the protectant spray counts of 13 farms sharpened the signal of that variable.</p>
   <p class="note">R² (Y2 raw scale) converts log10 predictions back to proportions. RMSE is in severity proportion units.</p>
 
   <h3>Response scale and variable set</h3>
   {{t_scale}}
-  <p>Models trained on log10(Y2) were clearly better on the log-scale R². On the raw-scale R² alone, a model trained on raw Y2 with weather variables was slightly higher (0.34 vs 0.27), but its log-scale fit was much worse (0.16). Adding weather (set B) did not help on the log scale, so we used set A.</p>
+  <p>Models trained on log10(Y2) were clearly better on the log-scale R² (0.43 vs 0.21). On the raw-scale R² alone, a model trained on raw Y2 was slightly higher (0.35 vs 0.33), but its log-scale fit was much worse. Adding weather (set B) did not help on the log scale (0.41), so we used set A.</p>
 
   <h3>Performance by number of variables</h3>
   <figure>
     <div class="legend"><span><i style="background:var(--s1)"></i>ElasticNet</span><span><i style="background:var(--s2)"></i>Kernel Ridge</span><span><i style="background:var(--s3)"></i>ExtraTrees</span></div>
     {{curve}}
-    <figcaption>Cross-validated R² (log10) using the top k variables by mean rank. ExtraTrees improved up to 15 variables (0.34 → 0.39), while the linear and kernel models were best at 3 variables or stayed low regardless of k.</figcaption>
+    <figcaption>Cross-validated R² (log10) using the top k variables by mean rank. ExtraTrees improved up to 15 variables (0.38 → 0.43), while ElasticNet and Kernel Ridge were best with 3 variables (immediate removal, protectant sprays, disease last year).</figcaption>
   </figure>
 
   <h3>Performance without selection bias (nested CV)</h3>
-  <p>When choosing one of the top 10 candidates (model × k) by inner CV is itself evaluated by outer CV, R² is <b>{{nested_r2}}</b>. The gap to the best value in the table above (0.39) is the optimism from picking the best of many models. Models chosen by the inner CV: {{nested_freq}}.</p>
+  <p>When choosing one of the top 10 candidates (model × k) by inner CV is itself evaluated by outer CV, R² is <b>{{nested_r2}}</b>. The gap to the best value in the table above (0.43) is the optimism from picking the best of many models. Models chosen by the inner CV: {{nested_freq}}.</p>
 </section>
 
 <section>
   <h2><span class="no">07</span>Final severity model and interpretation</h2>
   <p>We re-evaluated the representative model of each family under the same conditions (5-fold × 10 repeats, different seed).</p>
   {{t_final}}
-  <div class="callout"><p><b>Final severity model:</b> log10(Y2) predicted by ExtraTrees (tuned, top 15 variables by mean rank). Repeated CV R² {{reg_r2}} (log10), 0.24 (raw scale), nested CV {{reg_nested}}. In every model, <b>immediate removal of infected fruit</b> was by far the most important variable, followed by <b>anthracnose last year</b> and <b>protectant sprays</b>.</p></div>
+  <div class="callout"><p><b>Final severity model:</b> log10(Y2) predicted by ExtraTrees (tuned, top 15 variables by mean rank). Repeated CV R² {{reg_r2}} (log10), 0.25 (raw scale), nested CV {{reg_nested}}. In every model, <b>immediate removal of infected fruit</b> was by far the most important variable, followed by <b>anthracnose last year</b> (more damage) and <b>protectant sprays</b> (less damage). ElasticNet with only these three variables (0.397) is close to ExtraTrees, so most of the explained severity comes from them.</p></div>
 
   <h3>Interpretive linear model: how many times does severity change?</h3>
   {{t_coef}}
-  <p class="note">OLS regression of log10 severity on the three core variables chosen by Kernel Ridge. Severity multiplier = 10^coefficient (other variables fixed). Farms that remove infected fruit immediately have about 0.19× the severity (95% interval 0.10–0.37), farms with anthracnose last year about 1.9× (1.07–3.27), and 1 SD (3.6) more protectant sprays gives 0.83×, which is not significant. The training R² of this model (0.49) is far above its cross-validated R² (0.28), so read the direction and relative size rather than the exact multipliers. In the raw data, the median severity on farms that remove infected fruit immediately is 2.0%, about one-eighth of that on farms that do not (16.8%).</p>
+  <p class="note">OLS regression of log10 severity on the three core variables chosen by both the linear and kernel models. Severity multiplier = 10^coefficient (other variables fixed). Farms that remove infected fruit immediately have about 0.24× the severity (95% interval 0.12–0.46), farms with anthracnose last year about 1.9× (1.08–3.18), and farms with 1 SD (3.5) more protectant sprays about 0.69× (0.49–0.96, p = 0.030). The protectant effect was not significant on the v4 data (0.83×, p = 0.26) but is significant on the corrected v7 data. The training R² of this model (0.52) is above its cross-validated R² (0.35–0.40), so read the direction and relative size rather than the exact multipliers. In the raw data, the median severity on farms that remove infected fruit immediately is 2.0%, about one-eighth of that on farms that do not (16.8%).</p>
 
   <h3>Kernel Ridge: out-of-fold permutation importance</h3>
   {{krr_perm}}
-  <p class="note">Fold selection rate is the share of the 50 training folds in which the variable was among the top 3. Immediate removal was selected in every fold; disease last year and protectant sprays in more than half.</p>
+  <p class="note">Fold selection rate is the share of the 50 training folds in which the variable was among the top 3. Immediate removal and protectant sprays were selected in every fold, disease last year in 62%.</p>
 
   <h3>ExtraTrees (7 variables): variable effects by SHAP</h3>
   <figure>
     {{leg_sev}}
     {{et_bar}}
-    <figcaption>mean|SHAP| of ExtraTrees with 7 variables (log10 severity units; 0.3 ≈ ×2). Immediate removal (less damage) and disease last year (more damage) dominate; spray delay after rain, protectant sprays (less damage), top-dressing, days since spray before rain and planting density (more damage) are small.</figcaption>
+    <figcaption>mean|SHAP| of ExtraTrees with 7 variables (log10 severity units; 0.3 ≈ ×2). Immediate removal (less damage) is largest, followed by disease last year (more damage) and protectant sprays (less damage). Spray delay after rain, top-dressing, days since spray before rain and planting density are small.</figcaption>
   </figure>
   <div class="deps">{{deps}}</div>
   <p class="note">Each dot is one diseased farm. The y-axis is the variable's contribution to log10 severity (above the dashed line = more damage).</p>
@@ -229,9 +229,9 @@
   <p>Farms ranked by their share of the squared error (SSE) in the repeated-CV out-of-fold predictions of the final ExtraTrees model.</p>
   {{t_rows}}
   <ul class="key">
-    <li><b>Immediate removal but heavy damage (under-predicted):</b> Y25M060 (29.8%), Y25M103 (12.8%), Y25M108-1 (16.8%), Y26M021 (17.4%), Y25M069 (7.2%). These go against the model's strongest variable. Removal may have started late, or the answer may not reflect actual practice.</li>
-    <li><b>Immediate removal with very little damage (over-predicted):</b> Y25M005-1, Y25M128, Y25M112, Y25M017-1, Y25M016 (0.4–0.6%). The model predicted about 2.5–4%. With about one infected plant, small differences become large on the log scale.</li>
-    <li><b>Y25O009-1</b> (2.9%) was predicted at 18% because it had no removal and disease last year, but its damage was small; <b>Y25M047</b> (46.6%) was far worse than predicted (10%).</li>
+    <li><b>Immediate removal but heavy damage (under-predicted):</b> Y25M060 (29.8%, predicted 1.6%), Y25M108-1 (16.8%), Y25M103 (12.8%), Y26M021 (17.4%), Y25M069 (7.2%). These go against the model's strongest variable. Removal may have started late, or the answer may not reflect actual practice.</li>
+    <li><b>Immediate removal with very little damage (over-predicted):</b> Y25M005-1, Y25M112, Y25M128, Y25M017-1 (0.4–0.6%). The model predicted about 2–4%. With about one infected plant, small differences become large on the log scale.</li>
+    <li><b>No removal but little damage (over-predicted):</b> Y25O009-1 (2.9%, predicted 19%) and Y26M013-2 (3.6%, predicted 15%). Conversely, <b>Y25M047</b> (46.6%) was far worse than predicted (11%).</li>
   </ul>
   <h3>Removing the farms with the largest errors (sensitivity)</h3>
   {{t_sens}}
