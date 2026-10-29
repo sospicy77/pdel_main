@@ -14,8 +14,11 @@ import common as C  # noqa: E402
 from make_report import bar_chart, forest, line_chart, table  # noqa: E402
 from make_report_v2 import FONTS, LEG_OR, LEG_RISK, imp_rows, or_table  # noqa: E402
 from make_report_v3 import EXTRA_CSS, STYLE, build_fill  # noqa: E402
+import pipeline_diagram  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# 파이프라인 그림: 좁은 화면에서는 figure 안에서 가로 스크롤
+PIPE_CSS = ".pipe svg { width: 100%; min-width: 680px; height: auto; display: block; }"
 STRAT = {"meanrank": "평균순위", "rfshap": "RF-SHAP", "rfe": "RFE", "boruta": "Boruta"}
 MODEL = {"ET_l3": "ExtraTrees", "RF_l1": "Random Forest", "RF_l3": "Random Forest", "RF_l5_m5": "Random Forest",
          "XGB": "XGBoost", "lin": "로지스틱(ElasticNet)"}
@@ -268,6 +271,7 @@ def main(x4, r4, x3, r3, out, body_file="report_v4_body.html", title="고추탄�
     fill.update(cls_fill("noweather", "cn"))
     fill.update(vul_fill(r4))
     fill.update(weather_fill(r4))
+    fill["pipeline"] = pipeline_diagram.figure("en" if tr else "kr")
     fill.update(n=len(d4), n1=npos, n0=len(d4) - npos, thr=f"{t:g}", thr_pct=f"{t * 100:g}",
                 thr_curve=line_chart(series, "AUC", xlab="임계값"), t_thr=t_thr, t_var=t_var,
                 nt_auc=f'{cfg["noweather_nt"]["cv_nested"]:.3f}', leg_cls=LEG_RISK.format(w="발생 위험"),
@@ -276,7 +280,7 @@ def main(x4, r4, x3, r3, out, body_file="report_v4_body.html", title="고추탄�
     for k, v in fill.items():
         body = body.replace("{{" + k + "}}", tr(str(v)) if tr else str(v))
     page = (f'<title>{title}</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
-            f"{FONTS}\n{STYLE}\n{EXTRA_CSS}\n{body}")
+            f"{FONTS}\n{STYLE}\n{EXTRA_CSS}\n<style>{PIPE_CSS}</style>\n{body}")
     open(out, "w").write(page)
     print("wrote", out, "unfilled:", re.findall(r"\{\{\w+\}\}", page))
 
