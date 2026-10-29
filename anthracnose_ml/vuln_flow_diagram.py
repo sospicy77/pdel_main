@@ -85,6 +85,50 @@ CAPTION = ("Vulnerability assessment run on its own. ML steps (green) find the p
            "decomposes its predictions.")
 
 
+LIGHT = {"--bg": "#f7f8f6", "--surface": "#ffffff", "--fg": "#1b1f1c", "--muted": "#5a625c", "--line": "#dde2dc",
+         "--accent": "#2f6b3f", "--accent-soft": "#e5efe7",
+         "--f-body": "'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif"}
+
+
+def standalone_svg():
+    """다운로드용: CSS 변수를 밝은 테마 값으로 바꾸고 흰 배경을 깐 독립 SVG."""
+    import re
+    s = svg()
+    s = re.sub(r"var\((--[\w-]+)\)", lambda m: LIGHT[m.group(1)], s)
+    s = s.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ', 1)
+    s = s.replace('style="color:#1b1f1c;', 'color="#1b1f1c" style="', 1)
+    vb = re.search(r'viewBox="0 0 (\d+) (\d+)"', s)
+    s = s.replace("</defs>", f'</defs><rect width="{vb.group(1)}" height="{vb.group(2)}" fill="#ffffff"/>', 1)
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' + s
+
+
+# 다운로드 버튼: 게시된 그림 파일을 받아 downloads 기능으로 저장 (기능이 없으면 버튼 숨김)
+DL_JS = """<script>
+(async () => {
+  const box = document.querySelector(".dl");
+  const msg = box.querySelector(".dl-msg");
+  const downloads = window.claude ? await window.claude.use("downloads") : null;
+  if (!downloads) return;
+  box.hidden = false;
+  box.addEventListener("click", async (ev) => {
+    const btn = ev.target.closest("button");
+    if (!btn) return;
+    msg.textContent = "";
+    try {
+      const res = await fetch(btn.dataset.src);
+      if (!res.ok) throw new Error("fetch");
+      await downloads.save({ filename: btn.dataset.name, data: await res.blob() });
+      msg.textContent = "Saved.";
+    } catch (e) {
+      if (e && e.code === "declined") return;
+      if (e && (e.code === "unavailable" || e.code === "not_granted")) { box.hidden = true; return; }
+      msg.textContent = e && e.code === "rate_limited" ? "A save is already open. Try again shortly." : "Could not save the file.";
+    }
+  });
+})();
+</script>"""
+
+
 def figure():
     return f'<figure class="vf">\n    {svg()}\n    <figcaption>{E(CAPTION)}</figcaption>\n  </figure>'
 
@@ -94,12 +138,22 @@ if __name__ == "__main__":
     from make_report_v3 import EXTRA_CSS, STYLE
     out = sys.argv[1]
     page = (f'<title>Vulnerability Assessment Flow</title>\n{FONTS}\n{STYLE}\n{EXTRA_CSS}\n'
-            "<style>.vf svg { width: 100%; max-width: 760px; min-width: 520px; height: auto; display: block; margin: 0 auto; }</style>\n"
+            "<style>.vf svg { width: 100%; max-width: 760px; min-width: 520px; height: auto; display: block; margin: 0 auto; }"
+            ".dl { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }"
+            ".dl[hidden] { display: none; }"
+            ".dl button { padding: 8px 14px; border: 1px solid var(--accent); border-radius: 6px; color: var(--accent);"
+            " background: var(--surface); font: inherit; font-weight: 600; cursor: pointer; }"
+            ".dl button:hover { background: var(--accent-soft); } .dl-msg { align-self: center; color: var(--muted); }</style>\n"
             '<div class="wrap" lang="en"><header><div class="eyebrow">Pepper anthracnose survey · Vulnerability assessment</div>'
             "<h1>Vulnerability assessment flow</h1>"
             '<p class="sub">From occurrence modelling to variable selection, the vulnerability model and its use · ML / Stats / Design per step</p></header>\n'
-            f"<section>\n  {figure()}\n</section></div>")
+            f"<section>\n  {figure()}\n"
+            '  <p class="dl" hidden><button type="button" data-src="vuln_flow.png" data-name="vulnerability_flow.png">'
+            'Download PNG (2160 × 2838)</button><button type="button" data-src="vuln_flow.svg" data-name="vulnerability_flow.svg">'
+            'Download SVG (vector)</button><span class="dl-msg" role="status"></span></p>\n'
+            "</section></div>\n" + DL_JS)
     import re
     page = re.sub(r"/\*[^*]*[\uac00-\ud7a3][^*]*\*/", "", page)   # drop Korean CSS comments
     open(out, "w").write(page)
+    open(os.path.join(os.path.dirname(os.path.abspath(out)), "vuln_flow.svg"), "w").write(standalone_svg())
     print("wrote", out)
