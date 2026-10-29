@@ -10,14 +10,14 @@
   <div class="stats">
     <div class="stat"><span class="k">Occurrence · all variables</span><span class="v">AUC {{ca_auc}}</span><span class="d">occurrence = severity &gt; {{thr_pct}}% · {{ca_cfg}}</span></div>
     <div class="stat"><span class="k">Occurrence · no weather (exposure only)</span><span class="v">AUC {{cn_auc}}</span><span class="d">{{cn_cfg}}</span></div>
-    <div class="stat"><span class="k">Severity regression (Y2, 60 farms)</span><span class="v">R² {{reg_r2}}</span><span class="d">log10(Y2) · Huber regression · 3 variables · nested {{reg_nested}}</span></div>
+    <div class="stat"><span class="k">Severity regression (Y2, 60 farms)</span><span class="v">R² {{reg_r2}}</span><span class="d">log10(Y2) · ExtraTrees · 15 variables · nested {{reg_nested}}</span></div>
   </div>
   <ul class="key">
     <li><b>Occurrence threshold:</b> We redefined occurrence from total severity using thresholds from 0 to 0.03 in steps of 0.005. Classification worked best when <b>severity above 3% counts as occurrence</b> (AUC 0.767 → 0.806). Farms with mild disease (severity ≤ 3%) look like disease-free farms in their predictors, so grouping them with the disease-free farms separates the two classes better.</li>
     <li><b>All-variable model:</b> The main predictors are anthracnose last year, weed mat, spray delay after rain, July–August rainfall, exposure and June temperature. In the pre-specified logistic model, <b class="up">June mean temperature</b> (odds ×1.97 per SD, p = 0.014), <b class="up">July–August rainfall</b> (×1.86, p = 0.021) and <b class="up">days since spray before rain</b> (×1.89, p = 0.013) raise the risk, and a <b class="down">weed mat</b> (×0.33, p = 0.026) lowers it.</li>
     <li><b>No-weather model:</b> Dropping the 10 weather variables and keeping only exposure gives AUC {{cn_auc}}, only 0.014 below the all-variable model. Exposure carries most of the weather information. In this model <b class="up">days since spray before rain</b> (×1.56, p = 0.049), the <b class="down">weed mat</b> (×0.37, p = 0.033) and <b class="down">farm size</b> (no. of plants, ×0.58, p = 0.028) are significant, and <b class="up">exposure</b> (×1.43, p = 0.09) is borderline.</li>
     <li><b>Vulnerability analysis (Section 05):</b> Exposure raised the risk only on farms with anthracnose last year. After comparing 9 candidate sets, adaptive capacity uses two practices: days since spray before rain and the weed mat (spray-intensity variables added nothing once timing was in the model). At exposure 0.9, putting both practices at their best lowers the occurrence probability from 38.9% to 16.1% (−23 pp), and from 57% to 25% (−32 pp) on farms with disease last year. Days since spray before rain accounts for about 72% of adaptive capacity and the weed mat for about 28%. The index Vulnerability = effective exposure × sensitivity × (1 − adaptive capacity) discriminates occurrence with AUC 0.84.</li>
-    <li><b>Severity</b> is explained mostly by three variables: immediate removal of infected fruit (severity ×0.35), later first symptoms (×0.61 per 11 days) and the days from transplanting to first symptoms. Among 15 regression models on the v4 data, linear models (Huber, Ridge, ElasticNet; R² 0.56) did best, followed by the Gaussian process and ExtraTrees (0.53–0.54); boosting models reached 0.42–0.44. The nested CV R², free of selection bias, is 0.53 (Sections 06–08).</li>
+    <li><b>Severity</b> depends most on immediate removal of infected fruit (severity ×0.19) and anthracnose last year (×1.9); farms with more protectant sprays had less damage. First-symptom DOY and days transplant→first symptom were removed from the predictors because they describe the same thing as the response (disease progress). Among 15 regression models, ExtraTrees (15 variables, R² 0.39) did best; the nested CV R², free of selection bias, is 0.33 (Sections 06–08).</li>
   </ul>
 </section>
 
@@ -175,64 +175,63 @@
 
 <section>
   <h2><span class="no">06</span>Severity regression: model comparison (Y2)</h2>
-  <p>We reanalysed the 60 diseased farms (severity &gt; 0) of the v4 data. The response is Y2 total severity, and the predictors include first-symptom DOY, days transplant→first symptom and immediate removal of infected fruit. Compared with v3, Y25M013 severity (0.05 → 0.25) and Y25M018 immediate removal (1 → 0) changed.</p>
+  <p>We analysed the 60 diseased farms (severity &gt; 0) of the v4 data. The response is Y2 total severity. <b>First-symptom DOY and days transplant→first symptom were removed from the predictors.</b> Earlier first symptoms naturally mean a longer epidemic and higher final severity, so these two variables describe the same thing as the response (disease progress) and cannot explain which cropping or environmental factors raise damage. Immediate removal of infected fruit is a management response after onset and stays as a predictor (36 candidates).</p>
   <figure>
     <div class="legend"><span><i style="background:var(--fam1)"></i>Linear · ensemble</span><span><i style="background:var(--fam2)"></i>Kernel · distance</span><span><i style="background:var(--fam3)"></i>Tree</span><span><i style="background:var(--fam4)"></i>Boosting</span></div>
     {{model_bar}}
     <figcaption>Best cross-validated R² per model (log10 Y2, variable set A, 5-fold × 10 repeats). Each model uses its best number of variables among k = 3, 5, 7, 10, 15 and all.</figcaption>
   </figure>
   {{t_models}}
-  <p>Linear models did best (Huber 0.559, Ridge 0.558, ElasticNet 0.557), followed by the Gaussian process (0.539), Kernel Ridge (0.534) and ExtraTrees (0.527). Boosting models (XGBoost, CatBoost, LightGBM, GBM) reached only 0.42–0.44. Averaging the top 3 models (0.563) did not beat the single models. Every model family improved on v3 (best 0.520).</p>
-  <p class="note">R² (Y2 raw scale) converts log10 predictions back to proportions. The raw-scale R² is lower than the log-scale R² because a few heavily damaged farms dominate it. RMSE is in severity proportion units (0.11 ≈ 11 pp).</p>
+  <p>Removing the onset-timing variables lowered performance markedly (best R² 0.56 → 0.39), showing how much of the severity variation they carried. This time <b>ExtraTrees (tuned, 15 variables, 0.392)</b> did best, followed by default ExtraTrees (0.365), Random Forest (0.322) and CatBoost (0.308). Linear and kernel models (0.26–0.30) and the other boosting models (0.21–0.26) were lower. Without the strong linear signal of onset timing, tree models that capture non-linear and interaction effects of the remaining variables gained the edge. Averaging the top 3 models (0.375) did not beat the single best model.</p>
+  <p class="note">R² (Y2 raw scale) converts log10 predictions back to proportions. RMSE is in severity proportion units.</p>
 
   <h3>Response scale and variable set</h3>
   {{t_scale}}
-  <p>Models trained on log10(Y2) matched or beat models trained on raw Y2 on both the log-scale and raw-scale R². Adding weather (set B) did not help, so we used set A.</p>
+  <p>Models trained on log10(Y2) were clearly better on the log-scale R². On the raw-scale R² alone, a model trained on raw Y2 with weather variables was slightly higher (0.34 vs 0.27), but its log-scale fit was much worse (0.16). Adding weather (set B) did not help on the log scale, so we used set A.</p>
 
   <h3>Performance by number of variables</h3>
   <figure>
-    <div class="legend"><span><i style="background:var(--s1)"></i>Huber</span><span><i style="background:var(--s2)"></i>Gaussian process</span><span><i style="background:var(--s3)"></i>ExtraTrees</span></div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>ElasticNet</span><span><i style="background:var(--s2)"></i>Kernel Ridge</span><span><i style="background:var(--s3)"></i>ExtraTrees</span></div>
     {{curve}}
-    <figcaption>Cross-validated R² (log10) using the top k variables by mean rank. All three families peak at k = 3 and decline with more variables. Huber with all 38 variables drops to R² −0.93, shown clipped at 0. ExtraTrees stays around 0.50 as variables are added.</figcaption>
+    <figcaption>Cross-validated R² (log10) using the top k variables by mean rank. ExtraTrees improved up to 15 variables (0.34 → 0.39), while the linear and kernel models were best at 3 variables or stayed low regardless of k.</figcaption>
   </figure>
 
   <h3>Performance without selection bias (nested CV)</h3>
-  <p>When choosing one of the top 10 candidates (model × k) by inner CV is itself evaluated by outer CV, R² is <b>{{nested_r2}}</b> (v3: 0.46). The gap to the best value in the table above (0.56) is the optimism from picking the best of many models. Models chosen by the inner CV: {{nested_freq}}.</p>
+  <p>When choosing one of the top 10 candidates (model × k) by inner CV is itself evaluated by outer CV, R² is <b>{{nested_r2}}</b>. The gap to the best value in the table above (0.39) is the optimism from picking the best of many models. Models chosen by the inner CV: {{nested_freq}}.</p>
 </section>
 
 <section>
   <h2><span class="no">07</span>Final severity model and interpretation</h2>
-  <p>We re-evaluated the best model of each family under the same conditions (5-fold × 10 repeats, different seed). All chose the same three variables and performed similarly, so the conclusions do not depend on one model.</p>
+  <p>We re-evaluated the representative model of each family under the same conditions (5-fold × 10 repeats, different seed).</p>
   {{t_final}}
-  <div class="callout"><p><b>Final severity model:</b> log10(Y2) ~ immediate removal of infected fruit + first-symptom DOY + days transplant→first symptom (Huber regression). Repeated CV R² 0.58 (log10), 0.46 (raw scale). Huber regression is a robust linear regression that down-weights farms with large errors. The Gaussian process (0.58) and ExtraTrees (0.55) with the same three variables do almost as well, so non-linear effects and interactions are small.</p></div>
+  <div class="callout"><p><b>Final severity model:</b> log10(Y2) predicted by ExtraTrees (tuned, top 15 variables by mean rank). Repeated CV R² {{reg_r2}} (log10), 0.24 (raw scale), nested CV {{reg_nested}}. In every model, <b>immediate removal of infected fruit</b> was by far the most important variable, followed by <b>anthracnose last year</b> and <b>protectant sprays</b>.</p></div>
 
-  <h3>Huber regression coefficients: how many times does severity change?</h3>
+  <h3>Interpretive linear model: how many times does severity change?</h3>
   {{t_coef}}
-  <p class="note">Severity multiplier = 10^coefficient, holding the other two variables fixed. Farms that remove infected fruit immediately have about 0.35× the severity (v3: 0.44×), and first symptoms 11 days later mean about 0.61×. First-symptom DOY and days transplant→first symptom are strongly correlated (ρ 0.86), so read their two coefficients together as the effect of "timing of first symptoms".</p>
+  <p class="note">OLS regression of log10 severity on the three core variables chosen by Kernel Ridge. Severity multiplier = 10^coefficient (other variables fixed). Farms that remove infected fruit immediately have about 0.19× the severity (95% interval 0.10–0.37), farms with anthracnose last year about 1.9× (1.07–3.27), and 1 SD (3.6) more protectant sprays gives 0.83×, which is not significant. The training R² of this model (0.49) is far above its cross-validated R² (0.28), so read the direction and relative size rather than the exact multipliers. In the raw data, the median severity on farms that remove infected fruit immediately is 2.0%, about one-eighth of that on farms that do not (16.8%).</p>
 
-  <h3>Gaussian process: out-of-fold permutation importance</h3>
+  <h3>Kernel Ridge: out-of-fold permutation importance</h3>
   {{krr_perm}}
-  <p class="note">Fold selection rate is the share of the 50 training folds in which the variable was among the top 3. Immediate removal and first-symptom timing were selected in every fold.</p>
+  <p class="note">Fold selection rate is the share of the 50 training folds in which the variable was among the top 3. Immediate removal was selected in every fold; disease last year and protectant sprays in more than half.</p>
 
   <h3>ExtraTrees (7 variables): variable effects by SHAP</h3>
   <figure>
     {{leg_sev}}
     {{et_bar}}
-    <figcaption>mean|SHAP| of ExtraTrees with 7 variables (log10 severity units; 0.3 ≈ ×2). The 4th to 7th variables (disease last year, protectant sprays, top-dressing, days since spray before rain) have small effects and did not improve performance (R² 0.53 at k = 7).</figcaption>
+    <figcaption>mean|SHAP| of ExtraTrees with 7 variables (log10 severity units; 0.3 ≈ ×2). Immediate removal (less damage) and disease last year (more damage) dominate; spray delay after rain, protectant sprays (less damage), top-dressing, days since spray before rain and planting density (more damage) are small.</figcaption>
   </figure>
   <div class="deps">{{deps}}</div>
-  <p class="note">Each dot is one diseased farm. The y-axis is the variable's contribution to log10 severity (above the dashed line = more damage). When first symptoms appear later than about DOY 210 (end of July), the contribution turns negative.</p>
+  <p class="note">Each dot is one diseased farm. The y-axis is the variable's contribution to log10 severity (above the dashed line = more damage).</p>
 </section>
 
 <section>
   <h2><span class="no">08</span>Farms with large severity errors</h2>
-  <p>Farms ranked by their share of the squared error (SSE) in the repeated-CV out-of-fold predictions of the final Huber model. Y25M013 and Y25M018, whose values were corrected in v4, now have residuals close to 0 (predicted 26% and 36% vs observed 25% and 35%), so the corrections agree with the model.</p>
+  <p>Farms ranked by their share of the squared error (SSE) in the repeated-CV out-of-fold predictions of the final ExtraTrees model.</p>
   {{t_rows}}
   <ul class="key">
-    <li><b>Immediate removal = 1 but heavy damage (under-predicted):</b> Y25M103 (12.8%), Y25M105 (6.3%), Y25M060 (29.8%), Y25M108-1 (16.8%), Y26M021 (17.4%), Y25M069 (7.2%). These go against the model's strongest variable. Removal may have started late, or the answer may not reflect actual practice.</li>
-    <li><b>No removal but little damage (over-predicted):</b> Y25O009-1 (2.9%), Y25M100 (6.0%), Y26O006 (4.8%), Y25O004-1 (5.0%). The model predicted 14–27%.</li>
-    <li><b>Very little infection:</b> Y25M037 (0.48%). With about one infected plant, small differences become large on the log scale.</li>
-    <li><b>Y25M047</b> (46.6%): no protectant sprays and no immediate removal point toward damage, but the observed severity is far above the prediction (12%).</li>
+    <li><b>Immediate removal but heavy damage (under-predicted):</b> Y25M060 (29.8%), Y25M103 (12.8%), Y25M108-1 (16.8%), Y26M021 (17.4%), Y25M069 (7.2%). These go against the model's strongest variable. Removal may have started late, or the answer may not reflect actual practice.</li>
+    <li><b>Immediate removal with very little damage (over-predicted):</b> Y25M005-1, Y25M128, Y25M112, Y25M017-1, Y25M016 (0.4–0.6%). The model predicted about 2.5–4%. With about one infected plant, small differences become large on the log scale.</li>
+    <li><b>Y25O009-1</b> (2.9%) was predicted at 18% because it had no removal and disease last year, but its damage was small; <b>Y25M047</b> (46.6%) was far worse than predicted (10%).</li>
   </ul>
   <h3>Removing the farms with the largest errors (sensitivity)</h3>
   {{t_sens}}
@@ -245,7 +244,7 @@
     <li><b>Occurrence threshold:</b> The predictors separate farms best when occurrence is defined as severity above 3% (AUC 0.81). Mild disease (≤ 3%) is hard to tell apart from no disease with these predictors.</li>
     <li><b>Occurrence risk factors:</b> June temperature, July–August rainfall and disease last year raise the risk; a weed mat and spraying promptly around rain lower it. Using exposure alone instead of the weather variables gives nearly the same accuracy (AUC 0.79), so an exposure-based model is the practical choice in the field.</li>
     <li><b>Vulnerability:</b> The highest-risk group is high-exposure farms that had anthracnose last year. On these farms, adaptive practices such as spraying shortly before rain (≤ 2 days) and using a weed mat lower the occurrence probability the most. Whether fungicide was on the plants just before rain matters more than the number of sprays. The vulnerability index should use effective exposure, which accounts for disease last year, rather than raw exposure.</li>
-    <li><b>Severity:</b> Immediate removal of infected fruit and the timing of first symptoms determine the severity after onset; three variables explain about 53–58% of the variation in log severity (v3: 46–52%). The v4 corrections removed the prediction errors of the corrected farms.</li>
+    <li><b>Severity:</b> Leaving out onset timing, immediate removal of infected fruit after onset reduces damage the most (×0.19), and farms with anthracnose last year have more damage (×1.9). The remaining cropping and environmental variables explain only about 33–39% of the variation in log severity, so much of the severity depends on onset timing and other factors not in the survey.</li>
   </ul>
   <p class="note">Code: repository <code>anthracnose_ml/</code>. Threshold-based classification: <code>run_v4.py</code> (runs <code>run_threshold.py</code> → <code>run_selection2.py</code> → <code>run_final.py</code> → <code>run_effects.py</code>); vulnerability: <code>run_vulnerability.py</code>; severity regression: <code>run_reg_v4.py</code> (runs <code>run_reg_final.py</code>); report: <code>make_report_v4.py</code> / <code>make_report_v4_en.py</code>.</p>
 </section>

@@ -109,6 +109,7 @@ TERMS = {
     "R² (Y2 원척도)": "R² (Y2 raw scale)", "R² (원척도)": "R² (raw scale)",
     "선택 변수": "Selected variables",
     "log10 계수 (표준화)": "log10 coefficient (standardized)", "피해도 배수": "Severity multiplier",
+    "95% CI (배수)": "95% CI (multiplier)", "log10 계수": "log10 coefficient",
     "Permutation ΔR²": "Permutation ΔR²", "fold 선택률": "Fold selection rate",
     "실제 피해도": "Observed severity", "예측 피해도": "Predicted severity", "잔차 (log10)": "Residual (log10)",
     "SSE 기여": "SSE share", "과소예측": "Under-predicted", "과대예측": "Over-predicted",

@@ -122,9 +122,27 @@ def build_fill(xlsx, rd):
     # Ridge 계수
     dd = d[d[C.Y1] == 1].reset_index(drop=True)
     coef = R["ridge"].get("coef_std", {})
-    t_coef = table(pd.DataFrame([[v, "0→1" if dd[v].nunique() == 2 else f"+1 SD ({dd[v].std():.1f})",
-                                  f"{c:+.3f}", f"×{10 ** c:.2f}"] for v, c in coef.items()],
-                                columns=["변수", "단위", "log10 계수 (표준화)", "피해도 배수"]), "num")
+    if coef and len(coef) <= 5:
+        t_coef = table(pd.DataFrame([[v, "0→1" if dd[v].nunique() == 2 else f"+1 SD ({dd[v].std():.1f})",
+                                      f"{c:+.3f}", f"×{10 ** c:.2f}"] for v, c in coef.items()],
+                                    columns=["변수", "단위", "log10 계수 (표준화)", "피해도 배수"]), "num")
+    else:
+        # 선형 대표 모델이 변수가 많으면(대부분 계수 0) 커널 모델이 고른 핵심 변수로 해석용 OLS 를 적합
+        import statsmodels.api as sm
+        core = R["krr"]["selected"]
+        Xc = dd[core].fillna(dd[core].median()).astype(float)
+        bin_ = {c: Xc[c].nunique() == 2 for c in core}
+        Zc = Xc.copy()
+        for c in core:
+            if not bin_[c]:
+                Zc[c] = (Xc[c] - Xc[c].mean()) / Xc[c].std()
+        ols = sm.OLS(np.log10(dd[C.Y2].values), sm.add_constant(Zc)).fit()
+        ci = ols.conf_int()
+        t_coef = table(pd.DataFrame([[c, "0→1" if bin_[c] else f"+1 SD ({Xc[c].std():.1f})",
+                                      f"{ols.params[c]:+.3f}", f"×{10 ** ols.params[c]:.2f}",
+                                      f"×{10 ** ci.loc[c, 0]:.2f} – ×{10 ** ci.loc[c, 1]:.2f}", f"{ols.pvalues[c]:.3f}"]
+                                     for c in core],
+                                    columns=["변수", "단위", "log10 계수", "피해도 배수", "95% CI (배수)", "p"]), "num")
 
     def perm_table(j):
         return table(pd.DataFrame([[r["var"], f'{r["perm_mean"]:+.3f} ± {r["perm_std"]:.3f}',
@@ -139,20 +157,21 @@ def build_fill(xlsx, rd):
     Xs = pd.read_csv(f"{rd}/reg3_et7_X.csv")
     deps = "".join(f'<figure class="dep">{dependence(Xs[v], sv[v], v)}</figure>' for v in [r["var"] for r in et_rows[:6]])
 
-    rr = pd.read_csv(f"{rd}/reg3_ridge_rows.csv").head(12)
+    best_tag = max(["ridge", "krr", "et"], key=lambda t: R[t]["cv"]["R2_log"][0])
+    rr = pd.read_csv(f"{rd}/reg3_{best_tag}_rows.csv").head(12)
     t_rows = table(pd.DataFrame([[i + 1, r.ID, f"{r.피해도:.4f}", f"{r.예측_피해도:.3f}", f"{r.잔차:+.2f}",
                                   f"{r.SSE기여율 * 100:.1f}%", "과소예측" if r.잔차 > 0 else "과대예측",
-                                  int(r.이환과_즉시제거), int(r.초발_DOY)]
+                                  int(r.이환과_즉시제거), int(r.작년_탄저발생), int(r.보호_카_횟수)]
                                  for i, r in enumerate(rr.itertuples())],
                                 columns=["순위", "ID", "실제 피해도", "예측 피해도", "잔차 (log10)", "SSE 기여", "유형",
-                                         "이환과 즉시제거", "초발 DOY"]), "num")
+                                         "이환과 즉시제거", "작년 발생", "보호살균제 횟수"]), "num")
     t_sens = table(pd.DataFrame([[s["n"], f'{s["R2_log"]:.3f}', ", ".join(s["ids"]) or "-"]
-                                 for s in R["ridge"]["sensitivity"]],
+                                 for s in R[best_tag]["sensitivity"]],
                                 columns=["제외 농가 수", "R² (log10)", "제외한 ID"]), "num")
 
     fill = dict(
         n=len(d), n1=n1, n0=len(d) - n1,
-        reg_r2=f'{R["ridge"]["cv"]["R2_log"][0]:.3f}', reg_nested=f'{nested["nested"]["R2_log"][0]:.3f}',
+        reg_r2=f'{R[best_tag]["cv"]["R2_log"][0]:.3f}', reg_nested=f'{nested["nested"]["R2_log"][0]:.3f}',
         krr_r2=f'{R["krr"]["cv"]["R2_log"][0]:.3f}', et_r2=f'{R["et"]["cv"]["R2_log"][0]:.3f}',
         leg_cls=LEG_RISK.format(w="발생 위험"), leg_or=LEG_OR,
         model_bar=model_bar(rows), t_models=t_models, t_scale=t_scale,
