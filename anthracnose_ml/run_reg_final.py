@@ -85,10 +85,16 @@ def models(seed=0):
     }
 
 
+# 설명변수에서 뺄 변수 (환경변수 REG_EXCLUDE, 쉼표 구분). 예: 초발 시기처럼 피해 진행과 같은 성격이라
+# 원인 설명에 쓰면 안 되는 변수. 환경변수라 병렬 작업자 프로세스에도 그대로 전달된다.
+EXCLUDE = [v for v in os.environ.get("REG_EXCLUDE", "").split(",") if v]
+
+
 def data(path, sname):
     d = C.load(path)
     dd = d[d[C.Y1] == 1].reset_index(drop=True)
-    return dd, dd[C.feature_sets(dd, stage2=True)[sname]], dd[C.Y2].values
+    cols = [c for c in C.feature_sets(dd, stage2=True)[sname] if c not in EXCLUDE]
+    return dd, dd[cols], dd[C.Y2].values
 
 
 def scores(y, scale, pz):

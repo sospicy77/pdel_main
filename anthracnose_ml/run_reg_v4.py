@@ -5,6 +5,7 @@
 3. final: 계열별(선형·커널·트리) 최고 설정 + ExtraTrees k=7 (SHAP 해석용)
 
 사용법: python run_reg_v4.py <엑셀> <출력폴더>
+       (설명변수 제외: REG_EXCLUDE=초발_DOY,정식_초발_경과일 python run_reg_v4.py ...)
 """
 import json
 import os
