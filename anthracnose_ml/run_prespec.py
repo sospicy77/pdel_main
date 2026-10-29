@@ -5,12 +5,13 @@
   noweather: 노출값 + 민감도(작년 발생, 연작, 인근 고추밭) + 적응력(강우 전 방제 경과일, 제초매트)
              + 보정(농가 규모)  → 7개
   all      : 위 7개 + 기상 묶음 대표 2개(7~8월 누적강수량, 6월 평균기온)  → 9개
+  all_ne   : all 에서 노출값을 뺀 것 (노출값 제외 전체 변수 모형용)  → 8개
 추정: Firth 보정 로지스틱(사건 수 대비 변수가 많을 때 계수 과대추정을 줄임) + 비교용 최대우도 로지스틱.
 근거 강도: 해당 최종모형 후보 변수(25개) 전체에 대한 안정성 선택 빈도.
   크기 n/2 부분표본 500회 × L1 규제 경로, 평균 선택 변수 수 q ≤ 5 인 규제 구간에서의 최대 빈도
   (Meinshausen & Bühlmann 2010; 빈도 기준 π = 0.7 이면 잘못 선택되는 변수 기대 수 ≤ q²/((2π−1)p)).
 
-사용법: python run_prespec.py <labeled 엑셀> <변수세트 폴더> <all|noweather>
+사용법: python run_prespec.py <labeled 엑셀> <변수세트 폴더> <all|all_ne|noweather>
 """
 import json
 import os
@@ -38,7 +39,7 @@ COV = ["log_성묘개수"]
 WEATHER = ["7~8월_누적강수량", "6월_평균기온"]
 ROLE = {**{v: "노출" for v in E}, **{v: "민감도" for v in S}, **{v: "적응력" for v in A},
         **{v: "보정" for v in COV}, **{v: "기상" for v in WEATHER}}
-SPEC = {"noweather": E + S + A + COV, "all": E + WEATHER + S + A + COV}
+SPEC = {"noweather": E + S + A + COV, "all": E + WEATHER + S + A + COV, "all_ne": WEATHER + S + A + COV}
 Q, PI, N_SUB = 5, 0.7, 500
 
 

@@ -170,15 +170,19 @@ def main(x4, r4, x3, r3, out, body_file="report_v4_body.html", title="고추탄�
                                               "PR-AUC", "균형정확도", "AUC (기상 제외)"]), "num")
 
     def variant(name):
-        c = cfg[name]
-        j = json.load(open(f"{r4}/{name}/cls_final.json"))
+        vd, c = f"{r4}/{name}", cfg[name]
+        # 전체 변수 모형을 따로 다시 돌린 경우 (노출값 제외 등, run_cls_ne): CLS_ALL=<결과폴더>
+        if name == "all" and os.environ.get("CLS_ALL"):
+            vd = os.environ["CLS_ALL"]
+            c = json.load(open(f"{vd}/config.json"))
+        j = json.load(open(f"{vd}/cls_final.json"))
         # 오즈비: 사전 지정 모형(run_prespec)이 있으면 그것을, 없으면 이전 핵심변수 모형을 사용
-        pf = f"{r4}/{name}/prespec.json"
+        pf = f"{vd}/prespec.json"
         if os.path.exists(pf):
             e = json.load(open(pf))
             e = {**e["cls"], "_pre": e}
         else:
-            ef = f"{r4}/{name}/effects.json" if name == "all" else f"{r4}/{name}/effects_noweather.json"
+            ef = f"{vd}/effects.json" if name == "all" else f"{r4}/{name}/effects_noweather.json"
             e = json.load(open(ef))["cls"]
         return c, j, e
 

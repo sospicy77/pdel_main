@@ -47,6 +47,8 @@ def feature_sets(d, stage2):
         "B": base + WEATHER,
         # A 에서 강우-방제 타이밍(강우 이벤트 기준) 변수까지 뺀 세트: 기상 정보는 노출값만
         "A_nt": [c for c in base if c not in RAIN_TIMING],
+        # B 에서 노출값만 뺀 세트: 기상·방제 변수만으로 본 발생 모형
+        "B_ne": [c for c in base + WEATHER if c != "노출값"],
     }
 
 
