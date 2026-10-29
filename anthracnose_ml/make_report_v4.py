@@ -143,7 +143,10 @@ def main(x4, r4, x3, r3, out, body_file="report_v4_body.html", title="고추탄�
     # 피해도 회귀 섹션: v4 회귀 결과가 있으면 그것을, 없으면 v3 결과를 사용
     # 초발 시기 변수(피해 진행과 같은 성격)를 뺀 재분석(reg_noonset)을 우선 사용
     reg_dir = next((f"{r4}/{sub}" for sub in ["reg_noonset", "reg"] if os.path.exists(f"{r4}/{sub}/reg3_et7.json")), r3)
-    fill = build_fill(x4 if reg_dir != r3 else x3, reg_dir)
+    reg_x = x4 if reg_dir != r3 else x3
+    # 회귀만 더 새 자료로 다시 돌린 경우: REG_XLSX=<엑셀> REG_DIR=<결과폴더>
+    reg_dir, reg_x = os.environ.get("REG_DIR", reg_dir), os.environ.get("REG_XLSX", reg_x)
+    fill = build_fill(reg_x, reg_dir)
     cfg = json.load(open(f"{r4}/configs.json"))
     t = cfg["threshold"]
     d4 = C.load(x4)
