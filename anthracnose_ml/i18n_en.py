@@ -74,7 +74,7 @@ TERMS = {
     "평균순위": "Mean rank",
     "기상 제외 + 강우-방제 타이밍 제외": "No weather + no rain-spray timing",
     "기상 제외 (노출값만)": "No weather (exposure only)",
-    "전체 변수 (기상 포함)": "All variables (incl. weather)",
+    "전체 변수 (기상 포함)": "All variables (incl. weather)", "전체 변수 (노출값 제외)": "All variables (no exposure)",
     "전체 변수": "All variables",
     "A: 기상 제외": "A: no weather", "B: 기상 포함": "B: with weather",
     "Y2 원값": "Y2 raw",

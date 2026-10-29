@@ -19,7 +19,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 STRAT = {"meanrank": "평균순위", "rfshap": "RF-SHAP", "rfe": "RFE", "boruta": "Boruta"}
 MODEL = {"ET_l3": "ExtraTrees", "RF_l1": "Random Forest", "RF_l3": "Random Forest", "RF_l5_m5": "Random Forest",
          "XGB": "XGBoost", "lin": "로지스틱(ElasticNet)"}
-VLAB = {"all": "전체 변수 (기상 포함)", "noweather": "기상 제외 (노출값만)", "noweather_nt": "기상 제외 + 강우-방제 타이밍 제외"}
+VLAB = {"all": "전체 변수 (기상 포함)", "all_ne": "전체 변수 (노출값 제외)", "noweather": "기상 제외 (노출값만)", "noweather_nt": "기상 제외 + 강우-방제 타이밍 제외"}
 
 
 PR_LAB = {"제초매트": "제초매트", "보호_카_횟수": "보호살균제 횟수", "7~8월_사전경과_최대": "강우 전 방제 경과일",
@@ -187,7 +187,7 @@ def main(x4, r4, x3, r3, out, body_file="report_v4_body.html", title="고추탄�
         return c, j, e
 
     V = {n: variant(n) for n in ["all", "noweather", "noweather_nt"]}
-    t_var = table(pd.DataFrame([[VLAB[n], len(C.feature_sets(d4, stage2=False)[c["set"]]),
+    t_var = table(pd.DataFrame([[VLAB["all_ne" if c["set"] == "B_ne" else n], len(C.feature_sets(d4, stage2=False)[c["set"]]),
                                  f'{STRAT[c["strategy"]]} · {MODEL[c["model"]]} · k={c["k"]}',
                                  f'{c["cv_nested"]:.3f} ± {c["cv_nested_std"]:.3f}', f'{j["perf_fixed"]["AUC"]["mean"]:.3f}',
                                  f'{e["cv_auc"][0]:.3f}']
