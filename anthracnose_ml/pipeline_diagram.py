@@ -28,7 +28,7 @@ T = {
               3: ("ml", "적응력 후보 조합", "SHAP 상위 관행 포함", "9개 조합"),
               4: ("st", "곱셈형 감염압 모형", "CV AUC · AIC 비교", "→ 적응력 관행 2개"),
               5: ("st", "시나리오 (g-computation)", "노출값 0.1 / 0.5 / 0.9", "관행별 발생확률 감소"),
-              6: ("st", "기여도 분해 (Shapley)", "변수별 기여 %p", "적응력 안 관행 비중")},
+              6: ("ml", "기여도 분해 (Shapley)", "ML 해석을 통계 모형에 적용", "변수별 기여 %p · 관행 비중")},
         "C": [("rule", "초발 시기 변수 제외", "초발_DOY · 정식_초발_경과일", "반응변수와 같은 성격"),
               ("ml", "회귀 모델 15종 비교", "k = 3 … 전체 · log10 / 원척도", "반복 5-fold CV"),
               ("ml", "nested CV → 최종 모델", "선택 편향을 뺀 성능", "ExtraTrees (변수 15개)"),
@@ -43,7 +43,7 @@ T = {
         "legend": [("ml", "ML: 변수 선택 · 모델 비교 · 검증 · 해석 · 진단"), ("st", "통계 모형: 효과 크기 · 시나리오"),
                    ("rule", "분석 설계 규칙")],
         "aria": "분석 파이프라인. 설문 자료에서 발생, 취약성, 피해도 세 갈래로 나뉘고, ML은 발생 기준 선정, 변수 선택과 모델 비교, "
-                "SHAP 해석, 기상 조합 선별, 회귀 모델 비교와 nested CV, 오차 진단에 쓰였으며, 효과 크기와 취약성 시나리오는 통계 모형으로 추정했다.",
+                "SHAP 해석, 기상 조합 선별, 회귀 모델 비교와 nested CV, 오차 진단, 취약성 모형의 Shapley 기여도 분해에 쓰였으며, 효과 크기와 취약성 시나리오는 통계 모형으로 추정했다.",
     },
     "en": {
         "data": ("Survey data (v4) · 141 farms", "Cropping & spray practices · sensitivity (disease last year, continuous cropping, nearby field) · 10 weather · exposure · severity (Y2)"),
@@ -59,7 +59,7 @@ T = {
               3: ("ml", "Adaptive candidate sets", "Incl. top SHAP practices", "9 candidate sets"),
               4: ("st", "Multiplicative hazard model", "CV AUC · AIC comparison", "→ 2 adaptive practices"),
               5: ("st", "Scenarios (g-computation)", "Exposure 0.1 / 0.5 / 0.9", "Risk reduction by practice"),
-              6: ("st", "Contributions (Shapley)", "Per-variable pp", "Share within adaptive capacity")},
+              6: ("ml", "Contributions (Shapley)", "ML interpretation on stats model", "Per-variable pp · practice share")},
         "C": [("rule", "Drop onset-timing variables", "First-symptom DOY, interval", "Same nature as response"),
               ("ml", "Compare 15 regressors", "k = 3 … all · log10 / raw", "Repeated 5-fold CV"),
               ("ml", "Nested CV → final model", "Performance without bias", "ExtraTrees (15 variables)"),
@@ -75,7 +75,7 @@ T = {
                    ("st", "Statistical model: effect sizes · scenarios"), ("rule", "Design rule")],
         "aria": "Analysis pipeline. Survey data splits into occurrence, vulnerability and severity branches. ML was used for the occurrence "
                 "threshold, variable selection and model comparison, SHAP interpretation, weather-pair screening, regression model comparison "
-                "with nested CV, and error diagnostics; effect sizes and vulnerability scenarios come from statistical models.",
+                "with nested CV, error diagnostics and the Shapley decomposition of the vulnerability model; effect sizes and vulnerability scenarios come from statistical models.",
     },
 }
 
@@ -184,12 +184,12 @@ def svg(lang):
 
 def figure(lang):
     cap = {"kr": "보고서에 쓰인 분석의 흐름. 초록색 상자가 ML이 기여한 단계로, 발생 기준을 고르고, 변수를 선택하고 모델을 비교·검증하며(nested CV), "
-                 "SHAP으로 중요 변수와 방향을 찾고, 오차가 큰 농가를 진단했습니다. 효과의 크기(오즈비, 피해도 배수)와 재배방법별 발생확률 감소량은 "
+                 "SHAP으로 중요 변수와 방향을 찾고, 오차가 큰 농가를 진단했습니다. 취약성 모형의 기여도 분해에도 ML 해석 기법(Shapley)을 적용했습니다. 효과의 크기(오즈비, 피해도 배수)와 재배방법별 발생확률 감소량은 "
                  "결과와 무관하게 미리 정한 통계 모형으로 추정했습니다. 두 갈래를 잇는 화살표는 SHAP 순위가 적응력 후보를 제안하고, 취약성 틀이 "
                  "사전 지정 모형의 변수를 정한 경로입니다.",
            "en": "Flow of the analyses in this report. Green boxes are the steps where ML contributed: choosing the occurrence threshold, "
                  "selecting variables and comparing and validating models (nested CV), finding key variables and their direction with SHAP, and "
-                 "diagnosing farms with large errors. Effect sizes (odds ratios, severity multipliers) and the risk reduction per practice were "
+                 "diagnosing farms with large errors; the Shapley decomposition of the vulnerability model also applies this ML interpretation method. Effect sizes (odds ratios, severity multipliers) and the risk reduction per practice were "
                  "estimated with statistical models fixed in advance. The arrows between branches show SHAP ranks proposing adaptive-capacity "
                  "candidates and the vulnerability framework fixing the variables of the pre-specified model."}[lang]
     return f'<figure class="pipe">\n    {svg(lang)}\n    <figcaption>{E(cap)}</figcaption>\n  </figure>'
