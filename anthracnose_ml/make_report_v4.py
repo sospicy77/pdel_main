@@ -138,6 +138,51 @@ def adapt_table(r4):
             "v_int_evr": f"{c.get('intensity_evr', 0) * 100:.0f}"}
 
 
+def weather_fill(r4):
+    """노출값 + 기상 변수 2개 (run_weather_pairs + run_selection2 A_plus)."""
+    wd = f"{r4}/weather_pairs"
+    if not os.path.exists(f"{wd}/weather_pairs.json"):
+        return {}
+
+    def pick(f):
+        s = pd.read_csv(f)
+        s = s[s.strategy != "boruta"].assign(k=lambda x: x.k.astype(int))
+        r = s[s.AUC_mean >= s.AUC_mean.max() - 0.005].sort_values(["k", "AUC_mean"], ascending=[True, False]).iloc[0]
+        return r
+    rows, base = [], None
+    for lab, f, n in [("노출값만 (04장)", f"{r4}/noweather/cls_A_sel2_summary.csv", 35),
+                      ("노출값 제외, 기상 10개 (03장)", f"{r4}/all_ne/cls_B_ne_sel2_summary.csv", 44),
+                      ("노출값 + 기상 10개 전체", f"{r4}/all/cls_B_sel2_summary.csv", 45),
+                      ("노출값 + 6월 평균기온 + 7~8월 누적강수량 (사전 지정)", f"{wd}/pre/cls_A_plus_sel2_summary.csv", 37),
+                      ("노출값 + 7~8월 평균상대습도 + 7~8월 강우일수 (선별 최고)", f"{wd}/best/cls_A_plus_sel2_summary.csv", 37)]:
+        r = pick(f)
+        base = r.AUC_mean if base is None else base
+        rows.append([lab, n, f'{STRAT[r.strategy]} · {MODEL[r.model]} · k={r.k}', f"{r.AUC_mean:.3f} ± {r.AUC_std:.3f}",
+                     "-" if r.AUC_mean == base else f"{r.AUC_mean - base:+.3f}"])
+    t_models = table(pd.DataFrame(rows, columns=["설명변수", "후보 변수 수", "최종 설정", "AUC (선택 포함 CV)", "04장 대비"]), "num")
+
+    j = json.load(open(f"{wd}/weather_pairs.json"))
+    sc = pd.DataFrame(j["screen"])
+    b = sc[sc.pair == "base"].iloc[0]
+    p = sc[~sc.pair.isin(["base", "기상 10개 전체"])].sort_values("RF_AUC", ascending=False)
+    orp = lambda o, q: f"{o:.2f} ({q:.3f})"
+    srow = [["노출값만 (기준)", f"{b.RF_AUC:.3f}", f"{b.logit_AUC:.3f}", f"{b.AIC:.1f}", "-", "-", "-", orp(b.OR_노출값, b.p_노출값)]]
+    srow += [[r.pair, f"{r.RF_AUC:.3f}", f"{r.logit_AUC:.3f}", f"{r.AIC:.1f}", f"{r.LR_p:.3f}", orp(r.OR_1, r.p_1),
+              orp(r.OR_2, r.p_2), orp(r.OR_노출값, r.p_노출값)] for r in p.head(10).itertuples()]
+    t_screen = table(pd.DataFrame(srow, columns=["추가한 기상 변수", "RF AUC", "로지스틱 AUC", "AIC", "우도비 p",
+                                                 "변수 1 OR (p)", "변수 2 OR (p)", "노출값 OR (p)"]), "num")
+    pre = sc[sc.pair == "6월_평균기온 + 7~8월_누적강수량"].iloc[0]
+    nb = [r["base"] for r in j["nested"]]
+    nn = [r["nested"] for r in j["nested"]]
+    return {"w_models": t_models, "w_screen": t_screen,
+            "w_n_rf": str(int((p.RF_AUC > b.RF_AUC).sum())), "w_n_lr": str(int((p.LR_p < 0.05).sum())),
+            "w_rf_base": f"{b.RF_AUC:.3f}", "w_rf_all": f'{sc[sc.pair == "기상 10개 전체"].RF_AUC.iloc[0]:.3f}',
+            "w_pre_rf": f"{pre.RF_AUC:.3f}", "w_pre_rank": str(int((p.RF_AUC > pre.RF_AUC).sum()) + 1),
+            "w_nest_base": f"{sum(nb) / len(nb):.3f}", "w_nest": f"{sum(nn) / len(nn):.3f}",
+            "w_nest_reps": str(len(nb)), "w_nest_kinds": str(len({c for r in j["nested"] for c in r["chosen"]})),
+            "w_nest_folds": str(sum(len(r["chosen"]) for r in j["nested"]))}
+
+
 def main(x4, r4, x3, r3, out, body_file="report_v4_body.html", title="고추탄저병 최종 분석", tr=None):
     """tr: 생성된 표·그림 문자열에 적용할 번역 함수 (영문 보고서용)."""
     # 피해도 회귀 섹션: v4 회귀 결과가 있으면 그것을, 없으면 v3 결과를 사용
@@ -222,6 +267,7 @@ def main(x4, r4, x3, r3, out, body_file="report_v4_body.html", title="고추탄�
     fill.update(cls_fill("all", "ca"))
     fill.update(cls_fill("noweather", "cn"))
     fill.update(vul_fill(r4))
+    fill.update(weather_fill(r4))
     fill.update(n=len(d4), n1=npos, n0=len(d4) - npos, thr=f"{t:g}", thr_pct=f"{t * 100:g}",
                 thr_curve=line_chart(series, "AUC", xlab="임계값"), t_thr=t_thr, t_var=t_var,
                 nt_auc=f'{cfg["noweather_nt"]["cv_nested"]:.3f}', leg_cls=LEG_RISK.format(w="발생 위험"),

@@ -14,10 +14,11 @@
   </div>
   <ul class="key">
     <li><b>Occurrence threshold:</b> We redefined occurrence from total severity using thresholds from 0 to 0.03 in steps of 0.005. Classification worked best when <b>severity above 3% counts as occurrence</b> (AUC 0.767 → 0.806). Farms with mild disease (severity ≤ 3%) look like disease-free farms in their predictors, so grouping them with the disease-free farms separates the two classes better.</li>
-    <li><b>All-variable model (without exposure):</b> Exposure is used separately as the exposure term in Section 05, so this model was rebuilt with the remaining 44 variables (AUC {{ca_auc}}; 0.806 with exposure). The main predictors are July–August rainfall, days since spray before rain, farm size, June temperature and June rainy days. In the pre-specified logistic model (8 variables), <b class="up">July–August rainfall</b> (odds ×1.90 per SD, p = 0.004), <b class="up">June mean temperature</b> (×1.99, p = 0.013) and <b class="up">days since spray before rain</b> (×1.91, p = 0.012) raise the risk, and a <b class="down">weed mat</b> (×0.32, p = 0.024) lowers it.</li>
+    <li><b>All-variable model (without exposure):</b> Exposure is used separately as the exposure term in Section 06, so this model was rebuilt with the remaining 44 variables (AUC {{ca_auc}}; 0.806 with exposure). The main predictors are July–August rainfall, days since spray before rain, farm size, June temperature and June rainy days. In the pre-specified logistic model (8 variables), <b class="up">July–August rainfall</b> (odds ×1.90 per SD, p = 0.004), <b class="up">June mean temperature</b> (×1.99, p = 0.013) and <b class="up">days since spray before rain</b> (×1.91, p = 0.012) raise the risk, and a <b class="down">weed mat</b> (×0.32, p = 0.024) lowers it.</li>
     <li><b>No-weather model:</b> Dropping the 10 weather variables and keeping only exposure gives AUC {{cn_auc}}, only 0.014 below the all-variable model with exposure (0.806). Exposure carries most of the weather information. In this model <b class="up">days since spray before rain</b> (×1.56, p = 0.049), the <b class="down">weed mat</b> (×0.37, p = 0.033) and <b class="down">farm size</b> (no. of plants, ×0.58, p = 0.028) are significant, and <b class="up">exposure</b> (×1.43, p = 0.09) is borderline.</li>
-    <li><b>Vulnerability analysis (Section 05):</b> Exposure raised the risk only on farms with anthracnose last year. After comparing 9 candidate sets, adaptive capacity uses two practices: days since spray before rain and the weed mat (spray-intensity variables added nothing once timing was in the model). At exposure 0.9, putting both practices at their best lowers the occurrence probability from 38.9% to 16.1% (−23 pp), and from 57% to 25% (−32 pp) on farms with disease last year. Days since spray before rain accounts for about 72% of adaptive capacity and the weed mat for about 28%. The index Vulnerability = effective exposure × sensitivity × (1 − adaptive capacity) discriminates occurrence with AUC 0.84.</li>
-    <li><b>Severity</b> depends most on immediate removal of infected fruit (severity ×0.19) and anthracnose last year (×1.9); farms with more protectant sprays had less damage. First-symptom DOY and days transplant→first symptom were removed from the predictors because they describe the same thing as the response (disease progress). Among 15 regression models, ExtraTrees (15 variables, R² 0.39) did best; the nested CV R², free of selection bias, is 0.33 (Sections 06–08).</li>
+    <li><b>Exposure + two weather variables (Section 05):</b> Exposure alone cannot replace the weather information. Adding the pre-specified June mean temperature and July–August rainfall to the Section 04 model raises AUC from 0.792 to 0.808, equal to the model with all 10 weather variables (0.806), and with these two variables the effect of exposure disappears (odds ratio 1.43 → 1.03).</li>
+    <li><b>Vulnerability analysis (Section 06):</b> Exposure raised the risk only on farms with anthracnose last year. After comparing 9 candidate sets, adaptive capacity uses two practices: days since spray before rain and the weed mat (spray-intensity variables added nothing once timing was in the model). At exposure 0.9, putting both practices at their best lowers the occurrence probability from 38.9% to 16.1% (−23 pp), and from 57% to 25% (−32 pp) on farms with disease last year. Days since spray before rain accounts for about 72% of adaptive capacity and the weed mat for about 28%. The index Vulnerability = effective exposure × sensitivity × (1 − adaptive capacity) discriminates occurrence with AUC 0.84.</li>
+    <li><b>Severity</b> depends most on immediate removal of infected fruit (severity ×0.19) and anthracnose last year (×1.9); farms with more protectant sprays had less damage. First-symptom DOY and days transplant→first symptom were removed from the predictors because they describe the same thing as the response (disease progress). Among 15 regression models, ExtraTrees (15 variables, R² 0.39) did best; the nested CV R², free of selection bias, is 0.33 (Sections 07–09).</li>
   </ul>
 </section>
 
@@ -45,14 +46,14 @@
 
 <section>
   <h2><span class="no">03</span>Occurrence model: all variables (without exposure)</h2>
-  <p>Exposure is used separately as the exposure (E) term of the vulnerability analysis in Section 05, so this model <b>leaves exposure out and uses the remaining 44 variables</b> (including 8 weather variables and 2 IR-area variables). Occurrence = severity &gt; {{thr}} ({{n1}} farms). Final model: {{ca_cfg}}. AUC with variable selection inside each fold {{ca_auc}}; AUC with the selected variables fixed {{ca_auc_fixed}}. The same procedure with exposure included (45 variables) gave AUC 0.806, so dropping exposure barely reduced predictive power (−0.006). The information carried by exposure is taken over by the weather variables (rainfall, temperature, rainy days) and the rain–spray timing variables.</p>
+  <p>Exposure is used separately as the exposure (E) term of the vulnerability analysis in Section 06, so this model <b>leaves exposure out and uses the remaining 44 variables</b> (including 8 weather variables and 2 IR-area variables). Occurrence = severity &gt; {{thr}} ({{n1}} farms). Final model: {{ca_cfg}}. AUC with variable selection inside each fold {{ca_auc}}; AUC with the selected variables fixed {{ca_auc_fixed}}. The same procedure with exposure included (45 variables) gave AUC 0.806, so dropping exposure barely reduced predictive power (−0.006). The information carried by exposure is taken over by the weather variables (rainfall, temperature, rainy days) and the rain–spray timing variables.</p>
   <figure>
     {{leg_cls}}
     {{ca_bar}}
     <figcaption>Top 15 mean|SHAP| values of the final model (probability units). Colour shows direction from the rank correlation between variable value and SHAP. July–August rainfall, days since spray before rain and June mean temperature (higher risk) and farm size (lower risk) matter most, followed by June rainy days, July–August rainy days, spray delay after rain, and July spray count and protectant sprays (lower risk).</figcaption>
   </figure>
   <h3>Effect sizes (pre-specified model, {{ca_nspec}} variables)</h3>
-  <p>Odds ratios estimated after selecting variables on the same data are inflated, and their p-values and confidence intervals are not valid. We therefore fixed the variables in advance, independent of the results, using the vulnerability framework (exposure, sensitivity, adaptive capacity; Section 05), but left exposure out of this model: three sensitivity variables (disease last year, continuous cropping, nearby pepper field), two adaptive practices (days since spray before rain and weed mat, selected as in Section 05), farm size as an adjustment, and two weather representatives (July–August rainfall, June mean temperature). With only {{ca_epv}} events per variable, we used Firth-penalized logistic regression, which reduces coefficient inflation.</p>
+  <p>Odds ratios estimated after selecting variables on the same data are inflated, and their p-values and confidence intervals are not valid. We therefore fixed the variables in advance, independent of the results, using the vulnerability framework (exposure, sensitivity, adaptive capacity; Section 06), but left exposure out of this model: three sensitivity variables (disease last year, continuous cropping, nearby pepper field), two adaptive practices (days since spray before rain and weed mat, selected as in Section 06), farm size as an adjustment, and two weather representatives (July–August rainfall, June mean temperature). With only {{ca_epv}} events per variable, we used Firth-penalized logistic regression, which reduces coefficient inflation.</p>
   <figure>
     {{leg_or}}
     {{ca_forest}}
@@ -77,7 +78,7 @@
     <figcaption>Top 15 mean|SHAP| values of the no-weather model. Days since the last spray before rain and exposure matter most, followed by farm size and July spray count.</figcaption>
   </figure>
   <h3>Effect sizes (pre-specified model, {{cn_nspec}} variables)</h3>
-  <p>Odds ratios estimated after selecting variables on the same data are inflated, and their p-values and confidence intervals are not valid. We therefore fixed the variables in advance, independent of the results, using the vulnerability framework (exposure, sensitivity, adaptive capacity; Section 05): exposure, three sensitivity variables (disease last year, continuous cropping, nearby pepper field), two adaptive practices (days since spray before rain and weed mat, selected as in Section 05) and farm size as an adjustment. With only {{cn_epv}} events per variable, we used Firth-penalized logistic regression, which reduces coefficient inflation.</p>
+  <p>Odds ratios estimated after selecting variables on the same data are inflated, and their p-values and confidence intervals are not valid. We therefore fixed the variables in advance, independent of the results, using the vulnerability framework (exposure, sensitivity, adaptive capacity; Section 06): exposure, three sensitivity variables (disease last year, continuous cropping, nearby pepper field), two adaptive practices (days since spray before rain and weed mat, selected as in Section 06) and farm size as an adjustment. With only {{cn_epv}} events per variable, we used Firth-penalized logistic regression, which reduces coefficient inflation.</p>
   <figure>
     {{leg_or}}
     {{cn_forest}}
@@ -90,7 +91,32 @@
 </section>
 
 <section>
-  <h2><span class="no">05</span>Vulnerability analysis: exposure × sensitivity × (1 − adaptive capacity)</h2>
+  <h2><span class="no">05</span>Exposure + two weather variables: improving the occurrence model</h2>
+  <p>In Section 04 weather entered only through exposure. To check whether exposure can stand in for all weather variables, we added two weather variables to the Section 04 variable set (35 variables including exposure) and asked whether performance improves, using the same occurrence definition (severity &gt; {{thr}}). The candidates are the 45 pairs from 8 weather variables and 2 IR-area variables.</p>
+  <h3>Performance with the Section 04 procedure</h3>
+  {{w_models}}
+  <p class="note">Every row uses the Section 04 procedure (4 selection methods × 6 models × k, variable selection inside each fold, smallest k within 0.005 of the best).</p>
+  <ul class="key">
+    <li><b>Exposure alone cannot replace the weather information.</b> Adding June mean temperature and July–August rainfall to exposure raises AUC from 0.792 to 0.808, the same level as the model with all 10 weather variables (0.806). These two variables are enough in place of all 10.</li>
+    <li><b>This pair was fixed in advance.</b> June mean temperature and July–August rainfall are the weather-group representatives already used in the pre-specified model of Section 03, so there is no optimism from picking the best of 45 pairs.</li>
+    <li>The best pair in the screen, July–August mean relative humidity + July–August rainy days, reaches AUC 0.817, but as the nested check below shows, it was chosen from the data and its value is inflated.</li>
+  </ul>
+
+  <h3>Screening the 45 pairs</h3>
+  <p>Each pair was added to two models and compared on the same folds (repeated stratified 5-fold × 10): (a) the final RF of Section 04 (25 selected variables fixed, baseline AUC {{w_rf_base}}) and (b) the pre-specified logistic model of Section 04 (Firth, 7 variables). The likelihood-ratio p tests the two added variables; odds ratios are per 1 SD. The table shows the top 10 pairs by RF AUC.</p>
+  {{w_screen}}
+  <ul class="key">
+    <li>{{w_n_rf}} of the 45 pairs raised the RF AUC, and {{w_n_lr}} were significant in the logistic model (likelihood-ratio p &lt; 0.05). With all 10 weather variables the RF AUC is {{w_rf_all}}.</li>
+    <li>The pre-specified pair (June mean temperature + July–August rainfall) has RF AUC {{w_pre_rf}} (rank {{w_pre_rank}} of 45). In the logistic model AIC falls from 152.3 to 143.3, CV AUC rises from 0.711 to 0.745, and both variables are significant (June mean temperature ×1.97 per SD, p = 0.014; July–August rainfall ×1.86, p = 0.021; likelihood-ratio p = 0.001).</li>
+    <li><b>Adding weather variables removes the effect of exposure.</b> The odds ratio of exposure falls from 1.43 (p = 0.09) to about 1.0 in most pairs (1.03, p = 0.91, for the pre-specified pair): the weather variables absorb the information in exposure and add explanatory power on top. Exposure remains meaningful through its effect on farms with disease last year (Section 06), but it does not replace the weather variables for predicting occurrence.</li>
+  </ul>
+
+  <h3>Optimism from choosing the best pair from the data (nested CV)</h3>
+  <p>Within each outer training fold, the best of the 45 pairs was chosen by inner CV and then evaluated on the outer fold (outer 5-fold × {{w_nest_reps}}). AUC was {{w_nest_base}} without a pair and {{w_nest}} with the chosen pair, almost no difference, and the chosen pair varied: {{w_nest_kinds}} different pairs across {{w_nest_folds}} folds. There is no firm evidence that any particular pair is best, so rather than picking a pair from the screen we recommend the <b>pre-specified June mean temperature + July–August rainfall</b>. July–August humidity and rainy days should be confirmed with data from another year before use.</p>
+</section>
+
+<section>
+  <h2><span class="no">06</span>Vulnerability analysis: exposure × sensitivity × (1 − adaptive capacity)</h2>
   <p>We fitted a model of the occurrence probability (severity &gt; 3%) with the same structure as the vulnerability formula. From it we computed the reduction in occurrence probability per practice, each variable's contribution, how practice effects change with exposure, and an adaptive-capacity index.</p>
   <ul class="key">
     <li><b>Exposure (E):</b> the exposure value. <b>Sensitivity (S):</b> disease last year, continuous cropping and a pepper field within 50 m (conditions a farm cannot change in the short term), plus farm size (no. of plants) as an adjustment. <b>Adaptive capacity (A):</b> two practices, days since spray before rain and weed mat (see the comparison table below for the selection).</li>
@@ -174,7 +200,7 @@
 </section>
 
 <section>
-  <h2><span class="no">06</span>Severity regression: model comparison (Y2)</h2>
+  <h2><span class="no">07</span>Severity regression: model comparison (Y2)</h2>
   <p>We analysed the 60 diseased farms (severity &gt; 0) of the v4 data. The response is Y2 total severity. <b>First-symptom DOY and days transplant→first symptom were removed from the predictors.</b> Earlier first symptoms naturally mean a longer epidemic and higher final severity, so these two variables describe the same thing as the response (disease progress) and cannot explain which cropping or environmental factors raise damage. Immediate removal of infected fruit is a management response after onset and stays as a predictor (36 candidates).</p>
   <figure>
     <div class="legend"><span><i style="background:var(--fam1)"></i>Linear · ensemble</span><span><i style="background:var(--fam2)"></i>Kernel · distance</span><span><i style="background:var(--fam3)"></i>Tree</span><span><i style="background:var(--fam4)"></i>Boosting</span></div>
@@ -201,7 +227,7 @@
 </section>
 
 <section>
-  <h2><span class="no">07</span>Final severity model and interpretation</h2>
+  <h2><span class="no">08</span>Final severity model and interpretation</h2>
   <p>We re-evaluated the representative model of each family under the same conditions (5-fold × 10 repeats, different seed).</p>
   {{t_final}}
   <div class="callout"><p><b>Final severity model:</b> log10(Y2) predicted by ExtraTrees (tuned, top 15 variables by mean rank). Repeated CV R² {{reg_r2}} (log10), 0.24 (raw scale), nested CV {{reg_nested}}. In every model, <b>immediate removal of infected fruit</b> was by far the most important variable, followed by <b>anthracnose last year</b> and <b>protectant sprays</b>.</p></div>
@@ -225,7 +251,7 @@
 </section>
 
 <section>
-  <h2><span class="no">08</span>Farms with large severity errors</h2>
+  <h2><span class="no">09</span>Farms with large severity errors</h2>
   <p>Farms ranked by their share of the squared error (SSE) in the repeated-CV out-of-fold predictions of the final ExtraTrees model.</p>
   {{t_rows}}
   <ul class="key">
@@ -239,10 +265,11 @@
 </section>
 
 <section>
-  <h2><span class="no">09</span>Conclusions</h2>
+  <h2><span class="no">10</span>Conclusions</h2>
   <ul class="key">
     <li><b>Occurrence threshold:</b> The predictors separate farms best when occurrence is defined as severity above 3% (AUC 0.81). Mild disease (≤ 3%) is hard to tell apart from no disease with these predictors.</li>
     <li><b>Occurrence risk factors:</b> June temperature, July–August rainfall and disease last year raise the risk; a weed mat and spraying promptly around rain lower it. Using exposure alone instead of the weather variables gives nearly the same accuracy (AUC 0.79) as the weather variables without exposure (0.80), so an exposure-based model is the practical choice in the field.</li>
+    <li><b>Weather information:</b> Exposure does not replace the weather variables. Adding June mean temperature and July–August rainfall to exposure in the occurrence model gives the same performance as all 10 weather variables (AUC 0.81).</li>
     <li><b>Vulnerability:</b> The highest-risk group is high-exposure farms that had anthracnose last year. On these farms, adaptive practices such as spraying shortly before rain (≤ 2 days) and using a weed mat lower the occurrence probability the most. Whether fungicide was on the plants just before rain matters more than the number of sprays. The vulnerability index should use effective exposure, which accounts for disease last year, rather than raw exposure.</li>
     <li><b>Severity:</b> Leaving out onset timing, immediate removal of infected fruit after onset reduces damage the most (×0.19), and farms with anthracnose last year have more damage (×1.9). The remaining cropping and environmental variables explain only about 33–39% of the variation in log severity, so much of the severity depends on onset timing and other factors not in the survey.</li>
   </ul>
