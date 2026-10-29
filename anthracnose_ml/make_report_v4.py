@@ -124,7 +124,7 @@ def adapt_table(r4):
         return {"v_t_adapt": ""}
     c = json.load(open(f))
     rows = []
-    for name in sorted(k for k in c if k[:1] == "S"):
+    for name in sorted((k for k in c if k[:1] == "S"), key=lambda k: int(k.split(" ", 1)[0][1:])):
         v = c[name]
         ws = ", ".join(f"{PR_LAB.get(k, '방제강도 지수' if k == '방제강도_지수' else ('7월 살포횟수' if k == '7월_살포횟수' else ('살포일수' if k == '살포일수' else k)))} {w:.2f}"
                        f"{' ✓' if v['w_ci'][k][0] > 0 else ''}" for k, w in v["w"].items())

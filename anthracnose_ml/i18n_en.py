@@ -134,6 +134,7 @@ TERMS = {
     "방제강도(종합지수)+제초매트": "Spray intensity (index) + weed mat",
     "살포일수+제초매트": "Spray days + weed mat",
     "강우 전 방제 경과일+제초매트": "Days since spray before rain + weed mat",
+    "보호살균제+타이밍+제초매트": "Protectant sprays + timing + weed mat", "보호살균제+제초매트": "Protectant sprays + weed mat",
     "방제강도 지수": "Spray-intensity index", "방제강도_지수": "Spray-intensity index",
     "7월 살포횟수": "July spray count",
     "강우전경과": "days since spray before rain", "강우후지연": "delay after rain",
