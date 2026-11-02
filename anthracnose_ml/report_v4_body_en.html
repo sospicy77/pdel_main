@@ -129,6 +129,19 @@
     <li><b>Model:</b> P(occurrence) = 1 − exp(−H), H = λ · E<sup>α</sup> · S(E) · (1 − A). Adaptive capacity starts from the rule that practices act independently, A = 1 − Π(1 − w<sub>j</sub>·a<sub>j</sub>); a synergy or overlap term between the two practices was tested with a likelihood-ratio test. Uncertainty comes from 300 bootstrap resamples.</li>
   </ul>
 
+  <h3>How the weights were estimated</h3>
+  <p>The weights in the vulnerability formula were not set by hand: they are <b>model coefficients estimated from the occurrence data by maximum likelihood</b>. All coefficients of the model above (P = 1 − exp(−H)) were estimated jointly so that the model best explains the observed occurrence (severity &gt; 3%) on the 141 farms.</p>
+  {{v_t_est}}
+  <ul class="key">
+    <li><b>Maximum likelihood:</b> we maximized the log-likelihood of each farm's observed occurrence (0/1) given its predicted probability (L-BFGS-B, best of 8 starting points).</li>
+    <li><b>Constraints:</b> the adaptive weights w were bounded to 0–1, so each reads as "the share of infection pressure removed when the practice goes from worst to best"; the sensitivity coefficients θ were constrained to be ≥ 0 (risk-increasing).</li>
+    <li><b>Mild penalty:</b> with only 40 events, the sensitivity coefficients (θ, θx, β) carry a small ridge penalty (0.05); the adaptive weights w are not penalized.</li>
+    <li><b>Uncertainty:</b> 95% intervals come from 300 bootstrap resamples of farms, re-estimating every time.</li>
+    <li><b>How to read them:</b> w multiplies a 0–1 practice score a, so with both practices at their best the infection pressure falls by 1 − Π(1 − w) ≈ {{v_combo}}%. The vulnerability index V uses the same estimates; only E<sub>eff</sub> and S are divided by their sample maximum to scale them to 0–1 (the constant λ, which does not change farm rankings, is dropped).</li>
+    <li><b>Which variables get a weight</b> was decided before estimation: the adaptive practices by the candidate-set comparison below, and the exposure exponent, the disease-last-year × exposure term and the synergy term by likelihood-ratio tests.</li>
+  </ul>
+  <p class="note">The weight intervals are wide (the weed-mat interval reaches 0), so read the estimates as a relative order — spraying shortly before rain matters more than the weed mat — rather than as exact sizes.</p>
+
   <h3>Selecting the adaptive-capacity components: comparison of candidate sets</h3>
   <p>In the no-weather RF model, spray-intensity variables such as July spray count, spray days and protectant sprays had high SHAP importance, while the weed mat and days since spray before rain ranked lower. We therefore compared 9 candidate sets in the same vulnerability model, including the top SHAP variables, spray-intensity representatives (spray days, or an index of 6 spray variables) and the previous stability-selection set (repeated stratified 5-fold × 10; weights from 200 bootstrap resamples).</p>
   {{v_t_adapt}}

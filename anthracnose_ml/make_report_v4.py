@@ -3,6 +3,7 @@
 사용법: python make_report_v4.py <v4 엑셀> <results_v4> <v3 엑셀> <results_v3> <출력 html>
 """
 import json
+import math
 import os
 import re
 import sys
@@ -116,8 +117,23 @@ def formula_fill(r):
     th = p["theta"]
     s_terms = (f"{th['작년_탄저발생']:.2f}·작년발생 + " if th["작년_탄저발생"] > 0.005 else "") + \
         f"{th['연작']:.2f}·연작 + {th['인근고추밭_50m']:.2f}·인근고추밭 − {abs(p['beta_size']):.2f}·규모<sub>z</sub>"
+    # 가중치·계수 추정값 표 (최대우도 추정값 + 부트스트랩 95% 구간)
+    wci, tci = r["w_ci"], r["theta_ci"]
+    ci = lambda c: f"{c[0]:.2f}–{c[1]:.2f}"
+    est = [["적응력", "w · 강우 전 방제 경과일", f"{p['w']['7~8월_사전경과_최대']:.2f}", ci(wci["7~8월_사전경과_최대"]),
+            "최선(2일 이하)일 때 감염압을 줄이는 비율"],
+           ["적응력", "w · 제초매트", f"{p['w']['제초매트']:.2f}", ci(wci["제초매트"]), "사용할 때 감염압을 줄이는 비율"],
+           ["노출", "α · 노출값 지수", f"{p['alpha']:.2f}", ci(r["alpha_ci"]), "0에 가까우면 노출값 단독 효과 없음"],
+           ["노출", "θx · 작년 발생 × 노출값", f"{p['theta_x']:.2f}", ci(tci["작년×노출값"]), "작년 발생 농가에서 노출값의 효과"],
+           ["민감도", "θ · 연작", f"{th['연작']:.2f}", ci(tci["연작"]), ""],
+           ["민감도", "θ · 인근 고추밭", f"{th['인근고추밭_50m']:.2f}", ci(tci["인근고추밭_50m"]), ""],
+           ["민감도", "θ · 작년 발생 (단독)", f"{th['작년_탄저발생']:.2f}", ci(tci["작년_탄저발생"]), "노출값과 곱한 항으로만 작용"],
+           ["보정", "β · 농가 규모", f"{p['beta_size']:+.2f}".replace("-", "−"), "-", "규모가 클수록 위험 감소"]]
+    t_est = table(pd.DataFrame(est, columns=["요소", "계수", "추정값", "95% 구간", "의미"]), "num")
+    combo = 1 - math.prod(1 - w for w in p["w"].values())
     return {"v_A_formula": f"A = 1 − {a_terms}", "v_S_formula": s_terms,
-            "v_n_prac": str(len(p["w"])), "v_npairs": str(len(p["w"]) * (len(p["w"]) - 1) // 2)}
+            "v_n_prac": str(len(p["w"])), "v_npairs": str(len(p["w"]) * (len(p["w"]) - 1) // 2),
+            "v_t_est": t_est, "v_combo": f"{combo * 100:.0f}"}
 
 
 def adapt_table(r4):
