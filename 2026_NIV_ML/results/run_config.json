@@ -1,0 +1,37 @@
+{
+  "data": "/home/user/pdel_main/2026_NIV_ML/data/NIV_toxin_data.xlsx",
+  "out": "results",
+  "objective": "auc",
+  "outer_k": 5,
+  "outer_repeats": 3,
+  "inner_k": 5,
+  "n_trials": 60,
+  "slow_factor": 0.4,
+  "final_trials": 150,
+  "models": [
+    "LogisticRegression",
+    "SVM_RBF",
+    "KNN",
+    "MLP",
+    "RandomForest",
+    "ExtraTrees",
+    "XGBoost",
+    "LightGBM"
+  ],
+  "thresholds": [
+    0.0,
+    0.02,
+    0.04,
+    0.06,
+    0.08,
+    0.1,
+    0.12,
+    0.14,
+    0.16,
+    0.18,
+    0.2
+  ],
+  "n_jobs": -1,
+  "seed": 42,
+  "quick": false
+}
