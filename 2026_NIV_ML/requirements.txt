@@ -1,0 +1,9 @@
+pandas
+openpyxl
+numpy
+scikit-learn>=1.8
+xgboost
+lightgbm
+optuna
+matplotlib
+joblib
